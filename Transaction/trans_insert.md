@@ -14,12 +14,9 @@ static TransactionStateData TopTransactionStateData = {
 };
 ```
 
-## **1. `BEGIN;` **
+## 1. `BEGIN;`
 
-这一步主要是控制面在“运行环境”中为你预留位子。
-
-- **进程状态切换**：当前 Backend 进程的 `PGPROC` 结构体状态由 `Idle` 变为 `In Transaction`。
-- **事务描述符创建**：在内存中分配一个事务控制块（Transaction State），初始化其状态为 `TRANS_INPROGRESS`。
+- **事务状态**：事务控制块（TopTransactionStateData）初始化其状态为 `TRANS_INPROGRESS`。
 - **注意**：在 PG 中，执行 `BEGIN` 时通常还不会分配正式的事务 ID（XID），而是先分配一个 **虚拟事务 ID (VirtualXID)**，以节省 XID 资源。
 
 ```cpp
@@ -41,8 +38,6 @@ exec_simple_query
 
 ## **2. `INSERT INTO tb VALUES(1);`**
 
-这是最复杂的阶段，涉及了你之前研究的所有核心技术。
-
 A. 元数据检索（Syscache / Relcache）
 
 - 控制面必须先搞清楚 `tb` 是什么。它通过 **Syscache** 快速查询系统表（如 `pg_class`, `pg_attribute`），确定表的字段类型、是否有约束、是否有索引。
@@ -60,7 +55,7 @@ C. 物理锁定与空间寻找（Data Buffer & FSM）
 D. 正式事务 ID 分配（XID & CLOG）
 
 - 此时，控制面正式分配一个 **32 位的 XID**。
-- **CLOG (Commit Log)**：在共享内存的 CLOG 缓冲中，将该 XID 的状态标记为 `IN_PROGRESS`。
+- **CLOG (Commit Log)**：在共享内存的 CLOG 缓冲中，该 XID 的状态标记为 `IN_PROGRESS`（默认值）。
 
 E. 生成数据变更（MVCC & WAL）
 
@@ -90,7 +85,7 @@ exec_simple_query
     finish_xact_command /* This will only do something if the parsetree list was empty */
 ```
 
-## **3. `COMMIT;` **
+## 3. `COMMIT;`
 
 这一步是确保“原子性”和“持久性”的关键。
 
@@ -132,11 +127,11 @@ exec_simple_query
 
 ## 核心技术
 
-| 步骤       | 涉及技术（控制面/运行面）                 | 涉及技术（数据面）                      | 目的        |
-| -------- | ----------------------------- | ------------------------------ | --------- |
-| `BEGIN`  | Transaction State, VirtualXID | -                              | 环境准备      |
+| 步骤     | 涉及技术（控制面/运行面）     | 涉及技术（数据面）             | 目的               |
+| -------- | ----------------------------- | ------------------------------ | ------------------ |
+| `BEGIN`  | Transaction State, VirtualXID | -                              | 环境准备           |
 | `INSERT` | Lock Manager, Syscache, XID   | Shared Buffer, FSM, WAL Buffer | 逻辑执行与物理写入 |
-| `COMMIT` | CLOG, MVCC                    | Disk (WAL File)                | 状态确认与持久化  |
+| `COMMIT` | CLOG, MVCC                    | Disk (WAL File)                | 状态确认与持久化   |
 
 - **锁（Lock）** 保证了你执行时没人捣乱。
 - **MVCC/CLOG** 保证了别人什么时候能看到你的修改。
