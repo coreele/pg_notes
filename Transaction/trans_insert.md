@@ -55,7 +55,6 @@ C. 物理锁定与空间寻找（Data Buffer & FSM）
 D. 正式事务 ID 分配（XID & CLOG）
 
 - 此时，控制面正式分配一个 **32 位的 XID**。
-- **CLOG (Commit Log)**：在共享内存的 CLOG 缓冲中，该 XID 的状态标记为 `IN_PROGRESS`（默认值）。
 
 E. 生成数据变更（MVCC & WAL）
 
@@ -71,11 +70,19 @@ exec_simple_query
     foreach(parsetree_item, parsetree_list)
         /* analyze and plan */
         start_xact_command
+        pg_analyze_and_rewrite_fixedparams | parse_analyze_fixedparams
+            transformTopLevelStmt | transformOptionalSelectInto | transformStmt | transformInsertStmt
+                setTargetTable | table_openrv_extended | relation_openrv_extended | RangeVarGetRelid
+                    LockRelationOid(relId, RowExclusiveLock);
         PortalRun | PortalRunMulti | ProcessQuery
             ExecutorStart | standard_ExecutorStart
                 GetCurrentCommandId(true);
                     currentCommandIdUsed = true;
                     return currentCommandId;
+            ExecutorRun | standard_ExecutorRun | ExecutePlan | ExecProcNode
+                ExecModifyTable | ExecInsert | table_tuple_insert | heapam_tuple_insert
+                    heap_insert
+                        TransactionId xid = GetCurrentTransactionId();
         finish_xact_command
             CommitTransactionCommand
                 CommandCounterIncrement
