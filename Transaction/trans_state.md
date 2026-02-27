@@ -1,29 +1,8 @@
-# TransState 与 TBlockState 的关系
-
-## 简要定义
-
-### TransState（事务状态）
-
-```c
-/*
- *	transaction states - transaction state from server perspective
- */
-typedef enum TransState
-{
-	TRANS_DEFAULT,				/* idle */
-	TRANS_START,				/* transaction starting */
-	TRANS_INPROGRESS,			/* inside a valid transaction */
-	TRANS_COMMIT,				/* commit in progress */
-	TRANS_ABORT,				/* abort in progress */
-	TRANS_PREPARE				/* prepare in progress */
-} TransState;
-```
-
-**作用：** 描述**事务本身的执行状态**，从服务器内核角度反映事务进度。
+# PG中的事务状态
 
 ---
 
-### TBlockState（事务块状态）
+## TBlockState: 事务块状态
 
 ```c
 /*
@@ -64,6 +43,25 @@ typedef enum TBlockState
 
 **作用：** 描述**事务块的控制流状态**，从SQL语法层面反映用户命令执行流程。
 
+## TransState: 事务状态
+
+```c
+/*
+ *	transaction states - transaction state from server perspective
+ */
+typedef enum TransState
+{
+	TRANS_DEFAULT,				/* idle */
+	TRANS_START,				/* transaction starting */
+	TRANS_INPROGRESS,			/* inside a valid transaction */
+	TRANS_COMMIT,				/* commit in progress */
+	TRANS_ABORT,				/* abort in progress */
+	TRANS_PREPARE				/* prepare in progress */
+} TransState;
+```
+
+**作用：** 描述**事务本身的执行状态**，从服务器内核角度反映事务进度。
+
 ---
 
 ## 两者的关系
@@ -76,6 +74,7 @@ typedef enum TBlockState
 ┌─────────────────────────────────────┐
 │ TBlockState (SQL)                   │
 │ ├─ TBLOCK_DEFAULT                   │
+│ ├─ TBLOCK_STARTED                   │
 │ ├─ TBLOCK_BEGIN (BEGIN)             │
 │ ├─ TBLOCK_INPROGRESS (INSERT)       │
 │ └─ TBLOCK_END (COMMIT)              │
@@ -98,23 +97,5 @@ typedef enum TBlockState
 | ---------- | ----------- | ----------------------------------- | ------------ |
 | **SQL 层** | TBlockState | 处理 BEGIN、COMMIT、ROLLBACK 等命令 | 用户命令流   |
 | **内核层** | TransState  | 管理事务的实际执行进度              | 事务执行进度 |
-
----
-
-## 对应关系示例
-
-```
-用户命令              TBlockState              TransState
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[初始状态]           TBLOCK_DEFAULT      ←→  TRANS_DEFAULT
-
-BEGIN;               TBLOCK_BEGIN        ←→  TRANS_START
-
-INSERT ...;          TBLOCK_INPROGRESS   ←→  TRANS_INPROGRESS
-
-COMMIT;              TBLOCK_END          ←→  TRANS_COMMIT
-
-[完成]               TBLOCK_DEFAULT      ←→  TRANS_DEFAULT
-```
 
 [draw_trans_state](assets/draw_trans_state.md)
