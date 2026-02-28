@@ -140,7 +140,9 @@ exec_simple_query
 | `INSERT` | Lock Manager, Syscache, XID   | Shared Buffer, FSM, WAL Buffer | 逻辑执行与物理写入 |
 | `COMMIT` | CLOG, MVCC                    | Disk (WAL File)                | 状态确认与持久化   |
 
-- **锁（Lock）** 保证了你执行时没人捣乱。
-- **MVCC/CLOG** 保证了别人什么时候能看到你的修改。
-- **WAL** 保证了你答应的修改绝对不会丢。
-- **Buffer** 保证了你操作数据时的极致速度。
+作用
+
+- **锁（Lock）** 保证执行时没人捣乱
+- **MVCC/CLOG** 保证了别人什么时候能看到修改
+- **WAL** 保证了修改绝对不会丢
+- **Buffer** 保证了操作数据时的极致速度
