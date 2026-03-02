@@ -1,3 +1,0 @@
-事务中插入时查询
-
-HeapTupleSatisfiesVisibility

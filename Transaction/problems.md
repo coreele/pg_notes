@@ -18,9 +18,9 @@
 **用例：** `BEGIN; INSERT INTO tb VALUES(1); COMMIT;`
 
 1. PostgreSQL 中有哪些事务状态？分别对应什么含义？ **[trans_state](trans_state.md)**
-2. BEGIN;INSERT;COMMIT; 命令执行时，事务状态如何转移？何时分配 XID？为什么？
+2. BEGIN;INSERT;COMMIT; 命令执行时，事务状态如何转移？何时分配 XID？为什么？ [trans_vxid](trans_vxid.md) [trans_xid](trans_xid.md)
 
-### 问题2：事务提交流程
+### 问题2：事务提交流程 [trans_commit](trans_commit.md)
 
 **用例：** `BEGIN; INSERT INTO tb VALUES(1); COMMIT;`
 
@@ -31,7 +31,7 @@
 5. 提交后资源如何清理？内存、锁、文件描述符分别如何处理？
 6. synchronous_commit 参数如何影响提交流程？
 
-### 问题3：事务回滚处理
+### 问题3：事务回滚处理 TODO
 
 **用例：** `BEGIN; INSERT INTO tb VALUES(1/0); COMMIT;`
 
@@ -46,7 +46,7 @@
 
 ## 第二层：MVCC 与隔离（问题4-6）
 
-### 问题4：MVCC 快照机制
+### 问题4：MVCC 快照机制 [[]]
 
 1. Snapshot 数据结构包含哪些关键字段？各有什么含义？
 2. xmin、xmax、xip[] 数组如何决定行的可见性？
