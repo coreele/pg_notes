@@ -46,7 +46,7 @@
 
 ## 第二层：MVCC 与隔离（问题4-6）
 
-### 问题4：MVCC 快照机制 [[]]
+### 问题4：MVCC 快照机制 [mvcc_snapshot](mvcc_snapshot.md)
 
 1. Snapshot 数据结构包含哪些关键字段？各有什么含义？
 2. xmin、xmax、xip[] 数组如何决定行的可见性？

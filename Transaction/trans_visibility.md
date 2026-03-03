@@ -1,22 +1,15 @@
-## insert | select
+# 可见性检查
 
-```sql
-drop table if exists tb;
-create table tb(a int);
+| client 1            | client 2                    | note                 |
+| ------------------- | --------------------------- | -------------------- |
+|                     | `insert into tb values(1);` | implicit transaction |
+|                     | `begin;`                    |                      |
+|                     | `insert into tb values(2);` |                      |
+| `select * from tb;` |                             | 2 is invisible       |
+|                     | `commit`;                   |                      |
+| `select * from tb;` |                             | 2 is visible         |
 
-begin;
-insert into tb values(1);
-commit;
-
-select * from tb; -- 触发延迟更新 t_infomask
-
-begin;
-insert into tb values(2);
------------------------------: psql2: select * from tb; -- 1 可见，2 不可见; 由 HeapTupleSatisfiesMVCC 判断
-commit;
-```
-
-`HeapTupleSatisfiesMVCC`
+## 核心函数 `HeapTupleSatisfiesMVCC`
 
 ```
 SeqNext | table_scan_getnextslot | heap_getnextslot
