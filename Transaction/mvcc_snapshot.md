@@ -1,4 +1,4 @@
-# MVCC机制核心：快照
+# MVCC, Snapshot, Isolation
 
 ## 0. 核心用例设计
 
@@ -14,7 +14,7 @@ create table accounts(id int, balance int);
 insert into accounts values (1, 500);
 ```
 
-| client 1                        | client 2                                          |
+| *TXN A*                         | *TXN B*                                           |
 | ------------------------------- | ------------------------------------------------- |
 | `begin;`                        | `begin;`                                          |
 |                                 | `update accounts set balance = 200 where id = 1;` |
@@ -23,10 +23,10 @@ insert into accounts values (1, 500);
 | `select * from accounts; --200` |                                                   |
 | `commit;`                       |                                                   |
 
-- 默认隔离级别为 `read committed`，只有 client 2 提交就可以读到最新结果，因此存在不可重复读问题
+- 默认隔离级别为 `read committed`，只要 client 2 提交就可以读到最新结果，因此存在不可重复读问题
 - 将隔离级别修改为 `repeatable read` 读取结果一致
 
-| client 1                                             | client 2                                          |
+| *TXN A*                                              | *TXN B*                                           |
 | ---------------------------------------------------- | ------------------------------------------------- |
 | `start transaction isolation level repeatable read;` | `begin;`                                          |
 |                                                      | `update accounts set balance = 200 where id = 1;` |
@@ -45,7 +45,16 @@ insert into accounts values (1, 500);
 - **`xmax`**：快照发放时，系统分配过的最大 XID + 1。所有 XID ≥ xmax 的事务在拍照片时还没出生，其数据对该快照**一定不可见**。
 - **`xip[]` (Transaction ID Array)**：在 `xmin` 和 `xmax` 之间的“灰色地带”，记录了拍照那一刻**正在运行**的事务 ID 列表。
 
-## 2. 行的可见性判定逻辑
+```
+typedef struct SnapshotData
+{
+	TransactionId xmin;			/* all XID < xmin are visible to me */
+	TransactionId xmax;			/* all XID >= xmax are invisible to me */
+	TransactionId *xip;         /* in progress */
+}
+```
+
+## 2. 行的可见性判定逻辑 [mvcc_visibility](mvcc_visibility.md)
 
 每一行数据（HeapTuple）头部都有 `t_xmin`（插入者的 XID）和 `t_xmax`（删除/更新者的 XID）。基本方式如下：
 
@@ -66,17 +75,17 @@ insert into accounts values (1, 500);
 - **READ COMMITTED**：**每条 SQL 语句**执行前都会调用一次。所以你能看到其他事务刚提交的修改。
 - **REPEATABLE READ / SERIALIZABLE**：只在事务的**第一条 SQL** 执行前调用一次，后续整段事务都复用这张旧照片。
 
-  ```cpp
-  	if (IsolationUsesXactSnapshot()) /* 根据隔离级别判断是否复用快照 */
-		return CurrentSnapshot;
-
-	/* Don't allow catalog snapshot to be older than xact snapshot. */
-	InvalidateCatalogSnapshot();
-
-	CurrentSnapshot = GetSnapshotData(&CurrentSnapshotData);
-
+```cpp
+if (IsolationUsesXactSnapshot()) /* 根据隔离级别判断是否复用快照 */
 	return CurrentSnapshot;
-  ```
+
+/* Don't allow catalog snapshot to be older than xact snapshot. */
+InvalidateCatalogSnapshot();
+
+CurrentSnapshot = GetSnapshotData(&CurrentSnapshotData);
+
+return CurrentSnapshot;
+```
 
 ## 4. 活跃事务数组 (`ProcArray`)
 
