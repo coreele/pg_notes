@@ -20,11 +20,11 @@ SeqNext | table_scan_getnextslot | heap_getnextslot
 
 ## PostgreSQL MVCC 可见性判断核心规则
 
-[draw_visibility](assets/draw_visibility.md)
+[draw_snapshot](assets/draw_snapshot.md)
 
 PostgreSQL 中 `HeapTupleSatisfiesMVCC` 函数判断元组对当前快照可见性的逻辑，可以分为两大阶段：
 
-1. 判断 tuple 是否诞生 `xim`
+1. 判断 tuple 是否诞生 `xmin`
 2. 判断 tuple 是否消亡 `xmax`
 
 PostgreSQL 堆表元组仅定义**插入**与**删除**两种状态。MVCC 可见性判定核心为：**基于当前快照，元组创建事务（t_xmin）可见且删除事务（t_xmax）不可见**。

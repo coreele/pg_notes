@@ -67,6 +67,9 @@ postgres=# select * from stuff;
 >
 > 写偏斜是一种异常现象：两个并发事务分别读取了重叠的数据集合，然后各自写入互不重叠的字段，尽管没有任何单个列被同时覆盖，但最终却导致整体数据状态变为无效或违反约束。
 
+
+---
+
 ### 只读事务异常(Read-Only Transaction Anomaly)
 
 [Analyzing a read-only transaction anomaly under snapshot isolation](https://johann.schleier-smith.com/blog/2016/01/06/analyzing-a-read-only-transaction-anomaly-under-snapshot-isolation.html)
@@ -110,7 +113,7 @@ postgres=# select * from stuff;
 - 然而，事务 3 的输出（与事务 2 并发但不与事务 1 并发）却与相反的串行顺序一致，即“事务 1 先于事务 2"。
 - 归根结底，事务 3 的输出无法与产生最终状态的任何串行顺序相吻合。
 
-![700](assets/RR_anomaly.png)
+![](assets/RR_anomaly.png)
 
 **与“幻读”的区别**
 
@@ -130,26 +133,9 @@ CREATE TABLE bank_accounts (
 
 -- 0. 初始化数据
 INSERT INTO bank_accounts (account_type, balance) VALUES ('checking', 0), ('savings', 0);
-
 ```
 
-Txn 1:
-
-```sql
--- 4. 设置隔离级别为 REPEATABLE READ (快照隔离)
-BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
-
--- 5. R(savings) -> 0
-SELECT balance FROM bank_accounts WHERE account_type = 'savings';
-
--- 6. W(savings) <- 20 (实际是 update balance = balance + 20)
-UPDATE bank_accounts SET balance = balance + 20 WHERE account_type = 'savings';
-
--- 7. Commit
-COMMIT;
-```
-
-Txn 2:
+TXN 2:
 
 ```sql
 -- 1.设置隔离级别
@@ -169,8 +155,24 @@ UPDATE bank_accounts SET balance = -11 WHERE account_type = 'checking';
 COMMIT;
 ```
 
+TXN 1:
 
-Txn3:
+```sql
+-- 4. 设置隔离级别为 REPEATABLE READ (快照隔离)
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+-- 5. R(savings) -> 0
+SELECT balance FROM bank_accounts WHERE account_type = 'savings';
+
+-- 6. W(savings) <- 20 (实际是 update balance = balance + 20)
+UPDATE bank_accounts SET balance = balance + 20 WHERE account_type = 'savings';
+
+-- 7. Commit
+COMMIT;
+```
+
+
+TXN 3:
 
 ```sql
 -- 8. 在 Session 1 提交之后执行
