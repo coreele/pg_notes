@@ -13,8 +13,8 @@
 ```cpp
 main
     PostmasterMain
-        AllocSetContextCreate(TopMemoryContext, "Postmaster", ALLOCSET_DEFAULT_SIZES);
-        ProcessConfigFile // read postgresql.conf
+        InitProcessGlobals()
+        CreateDataDirLockFile()   // create postmaster.pid
         ServerLoop
             BackendStartup
                 fork_process
