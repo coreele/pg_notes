@@ -1,4 +1,4 @@
-# Lock
+# Lock Overview
 
 ## Overview
 
@@ -25,22 +25,7 @@ begin;
 update tb set a = 2; -- blocked
 ```
 
-## 更新表涉及到的锁
 
-```sql
-update tb set a = 1;
-```
-
-1. `RowExclusiveLock`
-
-```cpp
-exec_simple_query | pg_analyze_and_rewrite_fixedparams
-    parse_analyze_fixedparams | transformTopLevelStmt | transformOptionalSelectInto
-        transformStmt | transformUpdateStmt
-            setTargetTable | parserOpenTable(pstate, relation, RowExclusiveLock)
-                table_openrv_extended | relation_openrv_extended | RangeVarGetRelidExtended
-                    LockRelationOid
-```
 
 2. Locks
 
@@ -56,6 +41,8 @@ exec_simple_query | pg_analyze_and_rewrite_fixedparams
 ```
 
 [Table-Level Locks](https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-TABLES)
+
+[PostgreSQL Lock Conflicts](https://pglocks.org/)
 
 3. conflict matrix
 
