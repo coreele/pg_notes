@@ -15,7 +15,7 @@ select * from pg_locks where pid = 4840;
 update tb set a = 1;
 ```
 
-## `exec_simple_query` 执行阶段
+### 0. `exec_simple_query`
 
 ```cpp
 exec_simple_query
@@ -25,7 +25,7 @@ exec_simple_query
 	finish_xact_command
 ```
 
-1. vxid lock
+### 1. vxid lock
 
 ```cpp
 start_xact_command
@@ -34,7 +34,7 @@ start_xact_command
 		VirtualXactLockTableInsert /* Take vxid lock via the fast-path */
 ```
 
-2. `RowExclusiveLock`
+### 2. `RowExclusiveLock`
 
 ```cpp
 pg_analyze_and_rewrite_fixedparams
@@ -45,7 +45,7 @@ pg_analyze_and_rewrite_fixedparams
 					LockRelationOid /* Lock a relation given only its OID */
 ```
 
-3. transactionid lock
+### 3. transactionid lock
 
 ```cpp
 PortalRun | PortalRunMulti | ProcessQuery
@@ -65,7 +65,7 @@ PortalRun | PortalRunMulti | ProcessQuery
 							return LOCKACQUIRE_OK;
 ```
 
-4. tuple lock
+### 4. tuple lock
 
 ```cpp
 heap_update
@@ -95,7 +95,7 @@ heap_update
 	return TM_Ok;
 ```
 
-5. `finish_xact_command`
+### 5. `finish_xact_command`
 
 ```cpp
 finish_xact_command
@@ -108,7 +108,7 @@ finish_xact_command
 							VirtualXactLockTableCleanup
 ```
 
-完整过程
+### 完整过程
 
 ```cpp
 exec_simple_query
