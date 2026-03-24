@@ -1,7 +1,5 @@
 # 内存
 
-![](../src/backend/utils/mmgr/README)
-
 ## PostgreSQL 内存上下文（MemoryContext）核心逻辑
 
 1. **层级归属**：所有上下文构成以 `TopMemoryContext` 为根的树形结构，子上下文依赖父上下文存在，销毁父上下文会递归销毁所有子上下文；
