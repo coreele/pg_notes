@@ -125,40 +125,62 @@ main
 					EnablePortalManager
 						TopPortalContext = AllocSetContextCreate
 				MemoryContextDelete(PostmasterContext)
-				MessageContext = AllocSetContextCreate
-				row_description_context = AllocSetContextCreate
+				MessageContext = AllocSetContextCreate(TopMemoryContext, ...)
+				row_description_context = AllocSetContextCreate(TopMemoryContext, ...)
 
 				MemoryContextSwitchTo(MessageContext);
 				MemoryContextResetAndDeleteChildren(MessageContext);
-				exec_simple_query
-				    start_xact_command
-				        StartTransactionCommand
-				            StartTransaction
-				                AtStart_Memory
-					                TopTransactionContext =  AllocSetContextCreate(TopMemoryContext, ...)
-					                CurTransactionContext = TopTransactionContext;
-					                MemoryContextSwitchTo(CurTransactionContext);
-					    MemoryContextSwitchTo(CurTransactionContext);
-					oldcontext = MemoryContextSwitchTo(MessageContext);
-					pg_parse_query()
-					pg_analyze_and_rewrite_fixedparams
-					pg_plan_queries
-
-					CreatePortal
-						portal->portalContext = AllocSetContextCreate(TopPortalContext, ...)
-					PortalStart
-						MemoryContextSwitchTo(PortalContext)
-						ExecutorStart | standard_ExecutorStart | standard_ExecutorStart
-							estate = CreateExecutorState()
-								qcontext = AllocSetContextCreate(CurrentMemoryContext)
-								MemoryContextSwitchTo(qcontext)
-								estate->es_query_cxt = qcontext
-							MemoryContextSwitchTo(estate->es_query_cxt)
-							InitPlan | ExecInitNode | ExecInitSeqScan | ExecAssignExprContext
-								CreateExprContext | CreateExprContextInternal
-									econtext->ecxt_per_tuple_memory = AllocSetContextCreate
 ```
 
+```cpp
+MemoryContextSwitchTo(MessageContext);
+MemoryContextResetAndDeleteChildren(MessageContext);
+exec_simple_query
+	start_xact_command
+		StartTransactionCommand
+			StartTransaction
+				AtStart_Memory
+					TopTransactionContext =  AllocSetContextCreate(TopMemoryContext, ...)
+					CurTransactionContext = TopTransactionContext;
+					MemoryContextSwitchTo(CurTransactionContext);
+		MemoryContextSwitchTo(CurTransactionContext);
+	oldcontext = MemoryContextSwitchTo(MessageContext);
+	pg_parse_query()
+	pg_analyze_and_rewrite_fixedparams
+	pg_plan_queries
+
+	CreatePortal
+		portal->portalContext = AllocSetContextCreate(TopPortalContext, ...)
+	PortalStart
+		MemoryContextSwitchTo(PortalContext)
+		ExecutorStart | standard_ExecutorStart | standard_ExecutorStart
+			estate = CreateExecutorState()
+				qcontext = AllocSetContextCreate(CurrentMemoryContext)
+				MemoryContextSwitchTo(qcontext)
+				estate->es_query_cxt = qcontext
+			MemoryContextSwitchTo(estate->es_query_cxt)
+			InitPlan | ExecInitNode | ExecInitSeqScan | ExecAssignExprContext
+				CreateExprContext | CreateExprContextInternal
+					econtext->ecxt_per_tuple_memory = AllocSetContextCreate
+```
+
+```
+Create: TopTransactionContext
+Switch to: MessageContext
+Switch to: TopTransactionContext
+Switch to: MessageContext
+Create: PortalContext
+Create: ExecutorState
+Create: ExprContext
+Switch to: TopTransactionContext
+Create: printtup
+Delete: printtup
+Delete: ExprContext
+Delete: ExecutorState
+Delete: PortalContext
+Delete: TopTransactionContext
+Switch to: MessageContext
+```
 ### 🔑 关键特性
 
 | 特性             | 说明                                     | 好处               |
