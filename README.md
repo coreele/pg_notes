@@ -9,7 +9,6 @@
 ### 核心模块文档
 
 - **[boot.md](./boot.md)** - PostgreSQL 启动过程分析
-- **[tcop.md](./tcop.md)** - 顶层命令处理层 (Top-level Command Optimizer & Planner)
 - **[acrh.md](./acrh.md)** - 架构设计与核心组件
 - **[compile.md](./compile.md)** - 编译与构建过程
 - **[memory.md](Storage/memory.md)** - 内存管理机制
