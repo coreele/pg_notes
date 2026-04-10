@@ -4,41 +4,9 @@
 
 ## MemoryContext
 
-传统 malloc/free 的问题
+传统 malloc/free 独立分配释放，效率低、管理复杂。
 
-```c
-// 场景：解析一条复杂 SQL，分配了 100 次内存
-for (...) {
-    node = malloc(sizeof(Node));  // 分配
-    // ... 各种嵌套调用 ...
-    if (error) {
-        // 💥 怎么释放之前分配的 99 块内存？
-        // 需要手动记录每个指针，容易遗漏 → 内存泄漏
-        return;
-    }
-}
-// 正常结束也要逐个 free，代码冗长易错
-```
-
-PG 的解决方案：MemoryContext
-
-```c
-// 创建一个"查询上下文"
-MemoryContext query_ctx = AllocSetContextCreate(...);
-
-// 切换当前上下文
-MemoryContextSwitchTo(query_ctx);
-
-// 后续所有 palloc 都自动绑定到 query_ctx
-node1 = palloc(sizeof(Node));  // ✅ 不用记指针
-node2 = palloc(sizeof(Node));  // ✅ 不用记指针
-// ... 分配 100 次 ...
-
-// 查询结束/出错时：一键释放！
-MemoryContextDelete(query_ctx);  // ✅ 100 块内存自动释放，无泄漏
-```
-
-> **设计哲学**：**按生命周期组织内存，而不是按分配点**
+PostgreSQL 通过 **MemoryContext** 实现按生命周期统一内存管理，提升效率与可靠性。`palloc`
 
 ## Context Tree
 
@@ -86,19 +54,39 @@ MemoryContextReset
 
 ## 类比文件系统
 
-| **MemoryContext 概念**    | **文件系统类比**  | **说明**                     |
-| ------------------------- | ----------------- | ---------------------------- |
-| `MemoryContext`           | 目录 (Directory)  | 内存对象的容器               |
-| `TopMemoryContext`        | 根目录 `/`        | 永远存在，所有目录的父节点   |
-| `palloc()`                | `touch file`      | 在当前目录下创建文件         |
-| `CurrentMemoryContext`    | `pwd`             | 新文件默认创建在这里         |
-| `MemoryContextSwitchTo()` | `cd /path/to/dir` | 切换当前工作目录             |
-| `MemoryContextDelete()`   | `rm -rf dir`      | 删除目录及旗下所有文件       |
-| `MemoryContextReset()`    | `rm -rf dir/*`    | 清空内容，目录留着下次复用   |
-| 子上下文                  | 子目录            | 父目录删除时，子目录自动被删 |
-| 内存泄漏                  | 忘记删临时目录    | 文件残留，占用磁盘空间       |
+| **MemoryContext 概念**      | **文件系统类比**        | **说明**         |
+| ------------------------- | ----------------- | -------------- |
+| `MemoryContext`           | 目录 (Directory)    | 内存对象的容器        |
+| `TopMemoryContext`        | 根目录 `/`           | 永远存在，所有目录的父节点  |
+| `palloc()`                | `touch file`      | 在当前目录下创建文件     |
+| `CurrentMemoryContext`    | `pwd`             | 新文件默认创建在这里     |
+| `MemoryContextSwitchTo()` | `cd /path/to/dir` | 切换当前工作目录       |
+| `MemoryContextDelete()`   | `rm -rf dir`      | 删除目录及旗下所有文件    |
+| `MemoryContextReset()`    | `rm -rf dir/*`    | 清空内容，目录留着下次复用  |
+| 子上下文                      | 子目录               | 父目录删除时，子目录自动被删 |
+| 内存泄漏                      | 忘记删临时目录           | 文件残留，占用磁盘空间    |
 
 ## TopMemoryContext
+
+```
+TopMemoryContext
+	ErrorContext
+	Postmaster
+	CacheMemoryContext
+	TopPortalContext
+	
+TopMemoryContext (后端生命周期)
+├── ErrorContext          [出错备用] 错误消息/异常栈
+├── PostmasterContext     Postmaster 主进程专用, fork 后子进程
+0988删除
+├── CacheMemoryContext    [永久缓存] 计划/关系/类型缓存
+├── TransactionContext    [事务级] 快照/事务状态/锁
+├── MessageContext        [消息级] 原始语法树/消息缓冲区
+└── PortalContext         [查询入口]
+    └── QueryContext      [解析/规划] 查询树/执行计划
+        └── ExprContext   [执行期] 表达式状态
+            └── per_tuple_memory  [行级] 单行临时数据
+```
 
 ```cpp
 main
