@@ -123,36 +123,29 @@ MemoryContextResetAndDeleteChildren(MessageContext);
 exec_simple_query
 
 	/* create and switch to TopTransactionContext */
-	start_xact_command
-		StartTransactionCommand
-			StartTransaction
-				AtStart_Memory
-					TopTransactionContext =  AllocSetContextCreate(TopMemoryContext, ...)
-					CurTransactionContext = TopTransactionContext;
-					MemoryContextSwitchTo(CurTransactionContext);
+	start_xact_command | StartTransactionCommand | StartTransaction | AtStart_Memory
+		TopTransactionContext =  AllocSetContextCreate(TopMemoryContext, ...)
+		CurTransactionContext = TopTransactionContext;
 		MemoryContextSwitchTo(CurTransactionContext);
 
 	/* switch to: MessageContext */
 	oldcontext = MemoryContextSwitchTo(MessageContext);
+	
 	pg_parse_query
-
-	/* do something in CurTransactionContext */
-
-	/* switch to: MessageContext */
 	pg_analyze_and_rewrite_fixedparams
 	pg_plan_queries
 
-
 	CreatePortal
 		portal->portalContext = AllocSetContextCreate(TopPortalContext, ...)
-	PortalDefineQuery
+
 	PortalStart
 		MemoryContextSwitchTo(PortalContext)
 		CreateQueryDesc
 		ExecutorStart | standard_ExecutorStart | standard_ExecutorStart
 			estate = CreateExecutorState()
-				estate->es_query_cxt = AllocSetContextCreate(CurrentMemoryContext, ...)
+				qcontext = AllocSetContextCreate(CurrentMemoryContext, ...)
 				MemoryContextSwitchTo(qcontext)
+				estate = makeNode(EState);
 				estate->es_query_cxt = qcontext
 
 			/* switch to: QueryContext */
@@ -160,12 +153,10 @@ exec_simple_query
 			InitPlan | ExecInitNode | ExecInitSeqScan
 
 				/* create expression context for node */
-				ExecAssignExprContext | CreateExprContext | CreateExprContextInternal
-					econtext->ecxt_per_tuple_memory = AllocSetContextCreate(estate->es_query_cxt, "ExprContext")
-
-		MemoryContextSwitchTo(PortalContext)
-
-		MemoryContextSwitchTo(MessageContext)
+				ExecAssignExprContext
+					planstate->ps_ExprContext = CreateExprContext(estate);
+						CreateExprContextInternal
+							econtext->ecxt_per_tuple_memory = AllocSetContextCreate(estate->es_query_cxt, "ExprContext")
 
 	MemoryContextSwitchTo(TopTransactionContext)
 
@@ -177,13 +168,11 @@ exec_simple_query
 				printtup_startup
 					/* a temporary memory context that we can reset once per row to recover palloc'd memory */
 					myState->tmpcontext = AllocSetContextCreate(CurrentMemoryContext, "printtup", ...)
-				ExecutePlan
+				ExecutePlan /* Loop until we've processed the proper number of tuples from the plan. */
 
-					/* Loop until we've processed the proper number of tuples from the plan. */
 					ResetPerTupleExprContext(estate); /* (estate)->es_per_tuple_exprcontext */
 
 					ExecProcNode | ExecSeqScan | ExecScan
-
 						ResetExprContext(node->ps.ps_ExprContext);
 
 						/* get a tuple for(;;)*/
@@ -209,19 +198,14 @@ exec_simple_query
 		portal->cleanup(portal);
 			PortalCleanup
 				ExecutorFinish
-				ExecutorEnd
-					standard_ExecutorEnd
-						FreeExecutorState
-							FreeExprContext
-								MemoryContextDelete
-							MemoryContextDelete(estate->es_query_cxt);
-				FreeQueryDesc
+				ExecutorEnd | standard_ExecutorEnd | FreeExecutorState
+					FreeExprContext
+						MemoryContextDelete(econtext->ecxt_per_tuple_memory);
+					MemoryContextDelete(estate->es_query_cxt);
 		MemoryContextDelete(portal->portalContext);
 
-	finish_xact_command
-		CommitTransactionCommand
-			CommitTransaction
-				AtCommit_Memory
-					MemoryContextSwitchTo(TopMemoryContext);
-					MemoryContextDelete(TopTransactionContext);
+	finish_xact_command | CommitTransactionCommand | CommitTransaction
+		AtCommit_Memory
+			MemoryContextSwitchTo(TopMemoryContext);
+			MemoryContextDelete(TopTransactionContext);
 ```

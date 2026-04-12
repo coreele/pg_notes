@@ -1,11 +1,11 @@
-# MemoryContext and Buffer
+# MemoryContext & Buffer Manager
 
 PostgreSQL 的内存管理：
 
-1. **Buffer Manager**：管**磁盘数据**。核心是“缓存数据”，用 LRU 等算法把热点页留在内存，解决 IO 慢的问题。
-2. **MemoryContext**：管**计算临时数据**。核心是“管理生命周期”，专供解析、运行所需临时数据，靠树形结构批量释放。
+1. **MemoryContext**：管**计算临时数据**。核心是“管理生命周期”，专供解析、运行所需临时数据，靠树形结构批量释放。
+2. **Buffer Manager**：管**磁盘数据**。核心是“缓存数据”，用 LRU 等算法把热点页留在内存，解决 IO 慢的问题。
 
-| 维度   | MemoryContext (内存上下文)            | Buffer Manager (缓冲池)                            |
+| 维度   | MemoryContext                    | Buffer Manager                                  |
 | ---- | -------------------------------- | ----------------------------------------------- |
 | 本质定义 | 生命周期管理器                          | 数据缓存(通常进程间共享)                                   |
 | 服务对象 | CPU / 计算逻辑                       | 磁盘 / 持久化存储                                      |
