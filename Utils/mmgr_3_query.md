@@ -5,10 +5,9 @@
 ```
 TopPortalContext
 └── PortalContext
-	└── QueryContext
-		└── ExprContext
-			├── printtup
-			└── per_tuple_memory
+	└── QueryContext("ExecutorState")
+		├── ExprContext
+		└── tmpcontext("printtup")
 ```
 
 ## "simple Query"
