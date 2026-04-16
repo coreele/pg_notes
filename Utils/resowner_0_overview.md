@@ -1,6 +1,6 @@
-# **ResourceOwner
+# ResourceOwner
 
-ResourceOwner 是 PostgreSQL 中用于“统一管理**非内存资源**生命周期”的机制，确保资源在事务/执行结束或异常时被正确释放（手动实现 **RAII** ）。
+ResourceOwner 用于“统一管理**非内存资源**生命周期”的机制，确保资源在事务/执行结束或异常时被正确释放（手动实现 **RAII** ）。
 
 * 资源分散在各模块（buffer / lock / snapshot / file …）
 * 执行中可能随时中断
@@ -82,7 +82,3 @@ SAVEPOINT sp2;
 INSERT INTO t VALUES (2);
 COMMIT;
 ```
-
-![](assets/Pasted%20image%2020260416134945.png)
-
-buffer pool, 外存, 辅助进程, 索引, 执行器, 优化器
