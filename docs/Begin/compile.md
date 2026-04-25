@@ -71,7 +71,7 @@ host    all             all             127.0.0.1/32            trust
 连接
 
 ```sh
-psql -U zhougangjie -d postgres -h 127.0.0.1 -p 5432
+psql -U postgres -d postgres -h 127.0.0.1 -p 5432
 ```
 
 查询当前 pid
@@ -91,7 +91,7 @@ select pg_backend_pid();
       "name": "Attach PG",
       "type": "cppdbg",
       "request": "attach",
-      "program": "/Users/zhougangjie/SourceCodes/postgres/src/backend/postgres", // PostgreSQL 主程序路径
+      "program": "~/SourceCodes/postgres/src/backend/postgres", // PostgreSQL 主程序路径
       "processId": "${command:pickProcess}", // 允许手动选择进程ID
       "MIMode": "lldb", // 使用 GDB 调试器
       "setupCommands": [
