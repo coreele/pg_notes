@@ -1,3 +1,6 @@
+site_url: https://coreele.github.io/pg_notes/
+use_directory_urls: true
+
 site_name: PG Notes
 theme:
   name: material
