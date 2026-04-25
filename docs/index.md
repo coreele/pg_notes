@@ -8,12 +8,12 @@
 
 ### 核心模块文档
 
-- **[boot.md](docs/Begin/boot.md)** - PostgreSQL 启动过程分析
-- **[acrh.md](docs/Begin/acrh.md)** - 架构设计与核心组件
-- **[compile.md](docs/Begin/compile.md)** - 编译与构建过程
-- **[memory.md](docs/Utils/mmgr_0_overview.md)** - 内存管理机制
+- **[boot.md](Begin/boot.md)** - PostgreSQL 启动过程分析
+- **[acrh.md](Begin/acrh.md)** - 架构设计与核心组件
+- **[compile.md](Begin/compile.md)** - 编译与构建过程
+- **[memory.md](Utils/mmgr_0_overview.md)** - 内存管理机制
 - **[storage.md](Storage/storage.md)** - 存储管理概览
-- **[code_dir.md](docs/Begin/code_dir.md)** - 源代码目录结构
+- **[code_dir.md](Begin/code_dir.md)** - 源代码目录结构
 
 ### 专题目录
 
@@ -36,10 +36,10 @@
 
 ### 推荐阅读顺序
 
-0. 从 [compile](docs/Begin/compile.md) 编译调试源码
-1. 从 [code_dir.md](docs/Begin/code_dir.md) 了解源代码目录结构
-2. 阅读 [boot.md](docs/Begin/boot.md) 理解启动过程
-3. 查看 [acrh.md](docs/Begin/acrh.md) 学习整体架构
+0. 从 [compile](Begin/compile.md) 编译调试源码
+1. 从 [code_dir.md](Begin/code_dir.md) 了解源代码目录结构
+2. 阅读 [boot.md](Begin/boot.md) 理解启动过程
+3. 查看 [acrh.md](Begin/acrh.md) 学习整体架构
 4. 深入各专题目录（QueryProcess、Transaction、Storage）
 
 ### 环境要求
