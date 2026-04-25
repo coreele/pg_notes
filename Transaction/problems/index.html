@@ -1,0 +1,3431 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../mvcc_visibility/">
+      
+      
+        <link rel="next" href="../problems_lock/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Problems - PG Notes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="PG Notes" class="md-header__button md-logo" aria-label="PG Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PG Notes
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Problems
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PG Notes" class="md-nav__button md-logo" aria-label="PG Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PG Notes
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pg_notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Begin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Begin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/acrh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL 架构
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/boot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    启动
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/code_dir/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    源码目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/compile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    源码编译（macOS 15.4.1）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/tcop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    (tcop)Traffic COntrol Program
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Executor
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Executor
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Executor/exec_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Executor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Executor/exec_fp_modl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    从函数的角度理解数据库执行器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Executor/trigger_case/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trigger case
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Msic
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Msic
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Msic/cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Msic/temp_portal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portal ≈ Cursor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QueryProcess
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    QueryProcess
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/0_Overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心函数 exec_simple_query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/1_Parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    语法分析 pg_parse_query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/2_Analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    语义分析 parse_analyze_fixedparams
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/3_Planner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planner
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/4_Executor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Executor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/delete/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Delete
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/exec_simple_query/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    insert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/insert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Insert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HOT update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Storage
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Storage/buffer_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于共享缓冲区访问规则的说明
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Storage/lock_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lock Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Storage/lock_1_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    锁概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Storage/lock_2_update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Locks in update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Storage/lock_3_conflict/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lock conflict
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Storage/page/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transaction
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transaction
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mvcc_snapshot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MVCC, Snapshot, Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mvcc_visibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    可见性检查
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problems
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心问题速记
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第一层：基础事务模型（问题1-3）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第一层：基础事务模型（问题1-3）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题1：事务状态转换
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-trans_commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题2：事务提交流程 trans_commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-todo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题3：事务回滚处理 TODO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mvcc-4-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第二层：MVCC 与隔离（问题4-6）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第二层：MVCC 与隔离（问题4-6）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4mvcc-mvcc_snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题4：MVCC 快照机制 mvcc_snapshot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-trans_iso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题5：隔离级别实现 trans_iso
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-mvcc_visibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题6：事务可见性判断 mvcc_visibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wal-7-9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第三层：WAL 与持久化（问题7-9）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第三层：WAL 与持久化（问题7-9）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7wal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题7：WAL 日志结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8wal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题8：WAL 写入与刷盘
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题9：崩溃恢复流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第四层：并发控制（问题10-12）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第四层：并发控制（问题10-12）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题10：锁管理机制
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题11：死锁检测
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题12：冲突解决
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第五层：子事务与保存点（问题13-15）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第五层：子事务与保存点（问题13-15）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题13：子事务模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题14：保存点回滚
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题15：子事务的代价
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#16-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第六层：事务与其他模块的交互（问题16-18）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第六层：事务与其他模块的交互（问题16-18）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题16：事务与缓存失效
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题17：事务与触发器
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题18：事务与复制
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#19-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第七层：性能与优化（问题19-21）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第七层：性能与优化（问题19-21）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题19：事务启动优化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题20：提交性能瓶颈
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题21：事务吞吐量
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#22-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第八层：故障与恢复（问题22-24）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第八层：故障与恢复（问题22-24）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题22：部分故障场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题23：长事务的影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题24：事务日志维护
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#25-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第九层：高级特性（问题25-27）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第九层：高级特性（问题25-27）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题25：分布式事务（两阶段提交）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题26：逻辑复制中的事务
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题27：事务快照导出
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#28-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第十层：源码细节（问题28-30）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第十层：源码细节（问题28-30）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题28：全局变量与进程本地存储
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题29：内存上下文与事务生命周期
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题30：边界条件与异常处理
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        快速索引
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../problems_lock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL 锁机制源码研习路线图
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transaction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trans_commit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    提交事务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trans_insert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    事务管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trans_iso/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repeatable Read and SERIALIZABLE
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trans_state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PG中的事务状态
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trans_vxid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深度理解 PostgreSQL 虚拟事务 ID (VXID)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trans_xid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PG 事务物理事务id
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Utils
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryContext 介绍
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_1_top/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TopMemoryContext
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_2_query/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QueryContext
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_3_buf_res/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryContext &amp; Buffer Manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_4_impl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryContext 多态实现
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Context System Design Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/resowner_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ResourceOwner
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/resowner_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resowner readme
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心问题速记
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第一层：基础事务模型（问题1-3）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第一层：基础事务模型（问题1-3）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题1：事务状态转换
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-trans_commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题2：事务提交流程 trans_commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-todo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题3：事务回滚处理 TODO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mvcc-4-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第二层：MVCC 与隔离（问题4-6）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第二层：MVCC 与隔离（问题4-6）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4mvcc-mvcc_snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题4：MVCC 快照机制 mvcc_snapshot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-trans_iso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题5：隔离级别实现 trans_iso
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-mvcc_visibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题6：事务可见性判断 mvcc_visibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wal-7-9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第三层：WAL 与持久化（问题7-9）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第三层：WAL 与持久化（问题7-9）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7wal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题7：WAL 日志结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8wal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题8：WAL 写入与刷盘
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题9：崩溃恢复流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第四层：并发控制（问题10-12）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第四层：并发控制（问题10-12）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题10：锁管理机制
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题11：死锁检测
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题12：冲突解决
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第五层：子事务与保存点（问题13-15）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第五层：子事务与保存点（问题13-15）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题13：子事务模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题14：保存点回滚
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题15：子事务的代价
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#16-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第六层：事务与其他模块的交互（问题16-18）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第六层：事务与其他模块的交互（问题16-18）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题16：事务与缓存失效
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题17：事务与触发器
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题18：事务与复制
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#19-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第七层：性能与优化（问题19-21）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第七层：性能与优化（问题19-21）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题19：事务启动优化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题20：提交性能瓶颈
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题21：事务吞吐量
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#22-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第八层：故障与恢复（问题22-24）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第八层：故障与恢复（问题22-24）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题22：部分故障场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题23：长事务的影响
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题24：事务日志维护
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#25-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第九层：高级特性（问题25-27）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第九层：高级特性（问题25-27）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题25：分布式事务（两阶段提交）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题26：逻辑复制中的事务
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题27：事务快照导出
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#28-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第十层：源码细节（问题28-30）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第十层：源码细节（问题28-30）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题28：全局变量与进程本地存储
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题29：内存上下文与事务生命周期
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题30：边界条件与异常处理
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        快速索引
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+  <h1>Problems</h1>
+
+<h2 id="_1">核心问题速记<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>解决方案</th>
+<th>代码位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>如何保证修改的原子性？</td>
+<td>XID + TransState</td>
+<td>xact.c</td>
+</tr>
+<tr>
+<td>如何保证数据的持久性？</td>
+<td>WAL + XLogFlush</td>
+<td>xlog.c</td>
+</tr>
+<tr>
+<td>如何处理并发读写？</td>
+<td>MVCC + 快照</td>
+<td>snapmgr.c</td>
+</tr>
+<tr>
+<td>如何避免写写冲突？</td>
+<td>锁</td>
+<td>lock.c</td>
+</tr>
+<tr>
+<td>如何处理死锁？</td>
+<td>死锁检测器</td>
+<td>deadlock.c</td>
+</tr>
+<tr>
+<td>如何支持部分回滚？</td>
+<td>子事务 + SavePoint</td>
+<td>xact.c</td>
+</tr>
+<tr>
+<td>如何跨库保证原子性？</td>
+<td>两阶段提交</td>
+<td>twophase.c</td>
+</tr>
+<tr>
+<td># PostgreSQL 事务管理源码学习问题集</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-3">第一层：基础事务模型（问题1-3）<a class="headerlink" href="#1-3" title="Permanent link">&para;</a></h2>
+<h3 id="1">问题1：事务状态转换<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
+<p><strong>用例：</strong> <code>BEGIN; INSERT INTO tb VALUES(1); COMMIT;</code></p>
+<ol>
+<li>PostgreSQL 中有哪些事务状态？分别对应什么含义？ <strong><a href="../trans_state/">trans_state</a></strong></li>
+<li>BEGIN;INSERT;COMMIT; 命令执行时，事务状态如何转移？何时分配 XID？为什么？ <a href="../trans_vxid/">trans_vxid</a> <a href="../trans_xid/">trans_xid</a></li>
+</ol>
+<h3 id="2-trans_commit">问题2：事务提交流程 <a href="../trans_commit/">trans_commit</a><a class="headerlink" href="#2-trans_commit" title="Permanent link">&para;</a></h3>
+<p><strong>用例：</strong> <code>BEGIN; INSERT INTO tb VALUES(1); COMMIT;</code></p>
+<ol>
+<li>CommitTransaction() 函数的整体执行流程是什么？</li>
+<li>WAL 日志在提交中的作用是什么？何时写入？何时刷盘？</li>
+<li>XLogFlush() 函数的作用是什么？为什么必须等待它完成？</li>
+<li>TransactionIdCommitTree() 函数做了什么？为什么这一步很关键？</li>
+<li>提交后资源如何清理？内存、锁、文件描述符分别如何处理？</li>
+<li>synchronous_commit 参数如何影响提交流程？</li>
+</ol>
+<h3 id="3-todo">问题3：事务回滚处理 TODO<a class="headerlink" href="#3-todo" title="Permanent link">&para;</a></h3>
+<p><strong>用例：</strong> <code>BEGIN; INSERT INTO tb VALUES(1/0); COMMIT;</code></p>
+<ol>
+<li>错误是如何被捕获的？ereport() 函数与 siglongjmp() 的关系是什么？</li>
+<li>AbortCurrentTransaction() 与 AbortTransaction() 的区别是什么？</li>
+<li>事务回滚时需要撤销哪些修改？磁盘上的脏页如何处理？</li>
+<li>LockReleaseAll() 函数如何释放所有锁？为什么需要唤醒等待队列？</li>
+<li>内存上下文在回滚时如何清理？</li>
+<li>子事务回滚与主事务回滚的流程有何不同？</li>
+</ol>
+<hr />
+<h2 id="mvcc-4-6">第二层：MVCC 与隔离（问题4-6）<a class="headerlink" href="#mvcc-4-6" title="Permanent link">&para;</a></h2>
+<h3 id="4mvcc-mvcc_snapshot">问题4：MVCC 快照机制 <a href="../mvcc_snapshot/">mvcc_snapshot</a><a class="headerlink" href="#4mvcc-mvcc_snapshot" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Snapshot 数据结构包含哪些关键字段？各有什么含义？</li>
+<li>xmin、xmax、xip[] 数组如何决定行的可见性？</li>
+<li>GetTransactionSnapshot() 何时被调用？每个事务级别的隔离级别下是否每条语句都获取新快照？</li>
+<li>GetOldestXmin() 函数的作用是什么？它如何影响 VACUUM？</li>
+<li>在 REPEATABLE_READ 隔离级别下，为什么同一事务中的多条 SELECT 结果一致？</li>
+<li>活跃事务数组（ProcArray）的作用是什么？如何维护？</li>
+</ol>
+<h3 id="5-trans_iso">问题5：隔离级别实现 <a href="../trans_iso/">trans_iso</a><a class="headerlink" href="#5-trans_iso" title="Permanent link">&para;</a></h3>
+<ol>
+<li>PostgreSQL 实现了哪些隔离级别？哪些可能出现脏读、不可重复读、幻读？</li>
+<li>READ_COMMITTED 与 REPEATABLE_READ 在快照获取上的区别是什么？</li>
+<li>SERIALIZABLE 隔离级别基于什么算法实现？SSI（Serializable Snapshot Isolation）的核心思想是什么？</li>
+<li>如何检测序列化冲突？什么时候抛出 SERIALIZATION_FAILURE 错误？</li>
+<li>deferrable 事务的作用是什么？</li>
+</ol>
+<h3 id="6-mvcc_visibility">问题6：事务可见性判断 <a href="../mvcc_visibility/">mvcc_visibility</a><a class="headerlink" href="#6-mvcc_visibility" title="Permanent link">&para;</a></h3>
+<ol>
+<li><code>HeapTupleSatisfiesMVCC()</code> 函数如何判断一个行对当前事务是否可见？</li>
+<li>事务的 xmin 和 xmax 是如何计算的？</li>
+<li>为什么需要检查事务是否已提交、已回滚或仍在进行？</li>
+</ol>
+<hr />
+<h2 id="wal-7-9">第三层：WAL 与持久化（问题7-9）<a class="headerlink" href="#wal-7-9" title="Permanent link">&para;</a></h2>
+<h3 id="7wal">问题7：WAL 日志结构<a class="headerlink" href="#7wal" title="Permanent link">&para;</a></h3>
+<ol>
+<li>XLogRecord 的关键字段有哪些？各有什么作用？</li>
+<li>xl_rmgr（资源管理器 ID）有多少种？各管理什么资源的日志？</li>
+<li>XLOG_XACT_COMMIT 记录包含哪些信息？</li>
+<li>为什么要记录 xl_prev（前一条记录的位置）？</li>
+<li>WAL 记录如何分页存储？一个 WAL 文件大小是多少？</li>
+</ol>
+<h3 id="8wal">问题8：WAL 写入与刷盘<a class="headerlink" href="#8wal" title="Permanent link">&para;</a></h3>
+<ol>
+<li>XLogInsert() 函数的执行流程是什么？</li>
+<li>WAL 缓冲区的大小是多少？如何管理？</li>
+<li>XLogFlush() 与 XLogWrite() 的区别是什么？</li>
+<li>什么情况下会触发 WAL 缓冲区的刷新？</li>
+<li>wal_sync_method 参数如何影响持久化性能？</li>
+</ol>
+<h3 id="9">问题9：崩溃恢复流程<a class="headerlink" href="#9" title="Permanent link">&para;</a></h3>
+<ol>
+<li>PostgreSQL 启动时如何检查是否需要进行恢复？</li>
+<li>pg_control 文件记录了什么关键信息？</li>
+<li>恢复从哪个日志位置开始？lastCheckpoint 的作用是什么？</li>
+<li>恢复时如何重放日志？对于已提交、已回滚、不确定的事务如何处理？</li>
+<li>恢复完成后需要进行哪些清理操作？</li>
+</ol>
+<hr />
+<h2 id="10-12">第四层：并发控制（问题10-12）<a class="headerlink" href="#10-12" title="Permanent link">&para;</a></h2>
+<h3 id="10">问题10：锁管理机制<a class="headerlink" href="#10" title="Permanent link">&para;</a></h3>
+<ol>
+<li>PostgreSQL 支持哪些锁模式？各适用于什么场景？</li>
+<li>PROCLOCK 结构如何组织？一个进程如何追踪自己持有的所有锁？</li>
+<li>LockMethodData 数组的作用是什么？</li>
+<li>获取锁时的冲突检查如何进行？</li>
+<li>为什么 COMMIT 时要释放所有锁？</li>
+</ol>
+<h3 id="11">问题11：死锁检测<a class="headerlink" href="#11" title="Permanent link">&para;</a></h3>
+<ol>
+<li>死锁检测器（DeadlockCheck）何时运行？</li>
+<li>等待图（wait-for graph）如何构建？</li>
+<li>如何检测等待图中的环？</li>
+<li>选择牺牲者（victim selection）的标准是什么？</li>
+<li>被选中的事务如何回滚？</li>
+</ol>
+<h3 id="12">问题12：冲突解决<a class="headerlink" href="#12" title="Permanent link">&para;</a></h3>
+<ol>
+<li>什么时候两个事务会产生冲突？</li>
+<li>在 REPEATABLE_READ 下，幻读冲突如何被检测？</li>
+<li>在 SERIALIZABLE 下，哪些冲突会导致序列化失败？</li>
+<li>冲突检测的性能成本有多高？</li>
+</ol>
+<hr />
+<h2 id="13-15">第五层：子事务与保存点（问题13-15）<a class="headerlink" href="#13-15" title="Permanent link">&para;</a></h2>
+<h3 id="13">问题13：子事务模型<a class="headerlink" href="#13" title="Permanent link">&para;</a></h3>
+<ol>
+<li>SavePoint 的作用是什么？在源码中如何表示？</li>
+<li>子事务与主事务的关系是什么？事务栈如何管理？</li>
+<li>子事务的 XID 如何分配？与主事务 XID 的关系？</li>
+<li>子事务提交时，修改是否立即可见？</li>
+</ol>
+<h3 id="14">问题14：保存点回滚<a class="headerlink" href="#14" title="Permanent link">&para;</a></h3>
+<ol>
+<li>ROLLBACK TO SAVEPOINT 的执行流程是什么？</li>
+<li>回滚时如何恢复快照信息？</li>
+<li>子事务的资源（锁、内存）如何清理？</li>
+<li>嵌套保存点下的回滚如何处理？</li>
+</ol>
+<h3 id="15">问题15：子事务的代价<a class="headerlink" href="#15" title="Permanent link">&para;</a></h3>
+<ol>
+<li>为什么子事务会影响性能？</li>
+<li>子事务与快照管理的关系是什么？</li>
+<li>过多的子事务会导致什么问题？</li>
+</ol>
+<hr />
+<h2 id="16-18">第六层：事务与其他模块的交互（问题16-18）<a class="headerlink" href="#16-18" title="Permanent link">&para;</a></h2>
+<h3 id="16">问题16：事务与缓存失效<a class="headerlink" href="#16" title="Permanent link">&para;</a></h3>
+<ol>
+<li>元数据修改时，如何通知其他事务？</li>
+<li>InvalidateSystemCaches() 函数在什么时候被调用？</li>
+<li>Inval Message 如何跨进程传播？</li>
+<li>缓存失效与事务提交的同步关系是什么？</li>
+</ol>
+<h3 id="17">问题17：事务与触发器<a class="headerlink" href="#17" title="Permanent link">&para;</a></h3>
+<ol>
+<li>BEFORE/AFTER 触发器在事务流程中的执行位置？</li>
+<li>触发器中的事务修改是否参与主事务的提交？</li>
+<li>触发器中的错误如何影响事务状态？</li>
+<li>DEFERRABLE 与触发器的关系是什么？</li>
+</ol>
+<h3 id="18">问题18：事务与复制<a class="headerlink" href="#18" title="Permanent link">&para;</a></h3>
+<ol>
+<li>synchronous_commit 参数与流复制的关系？</li>
+<li>主库事务提交时，如何等待从库应答？</li>
+<li>同步复制失败时的降级策略？</li>
+<li>级联复制中的事务一致性保证？</li>
+</ol>
+<hr />
+<h2 id="19-21">第七层：性能与优化（问题19-21）<a class="headerlink" href="#19-21" title="Permanent link">&para;</a></h2>
+<h3 id="19">问题19：事务启动优化<a class="headerlink" href="#19" title="Permanent link">&para;</a></h3>
+<ol>
+<li>为什么要延迟分配 XID？</li>
+<li>只读事务是否需要分配 XID？如何优化？</li>
+<li>自动提交模式与显式事务的性能差异？</li>
+<li>CommitTransactionCommand() 与 CommitTransaction() 的关系？</li>
+</ol>
+<h3 id="20">问题20：提交性能瓶颈<a class="headerlink" href="#20" title="Permanent link">&para;</a></h3>
+<ol>
+<li>WAL 刷盘通常是最大的性能瓶颈吗？</li>
+<li>synchronous_commit 的不同设置对性能的影响量化？</li>
+<li>批量提交（group commit）如何实现？</li>
+<li>full_page_writes 参数对性能的影响？</li>
+</ol>
+<h3 id="21">问题21：事务吞吐量<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<ol>
+<li>什么是"连接效应（connection effect）"？</li>
+<li>如何监控事务的平均响应时间？</li>
+<li>长事务对其他事务的影响？</li>
+<li>如何识别和优化慢事务？</li>
+</ol>
+<hr />
+<h2 id="22-24">第八层：故障与恢复（问题22-24）<a class="headerlink" href="#22-24" title="Permanent link">&para;</a></h2>
+<h3 id="22">问题22：部分故障场景<a class="headerlink" href="#22" title="Permanent link">&para;</a></h3>
+<ol>
+<li>事务提交时磁盘写入失败，如何处理？</li>
+<li>WAL 缓冲区溢出时的降级策略？</li>
+<li>OOM（内存不足）时事务如何清理？</li>
+<li>网络中断导致同步复制超时，是否回滚？</li>
+</ol>
+<h3 id="23">问题23：长事务的影响<a class="headerlink" href="#23" title="Permanent link">&para;</a></h3>
+<ol>
+<li>长事务为什么会导致 VACUUM 无法清理？</li>
+<li>长事务对 xmin horizon 的影响？</li>
+<li>长事务如何被识别和警告？</li>
+<li>如何强制终止长事务？</li>
+</ol>
+<h3 id="24">问题24：事务日志维护<a class="headerlink" href="#24" title="Permanent link">&para;</a></h3>
+<ol>
+<li>clog（Commit Log）的作用是什么？</li>
+<li>pg_xact 目录中的文件如何组织？</li>
+<li>事务状态如何从 xact.c 中的数组写入 clog？</li>
+<li>clog 的自动清理策略是什么？</li>
+</ol>
+<hr />
+<h2 id="25-27">第九层：高级特性（问题25-27）<a class="headerlink" href="#25-27" title="Permanent link">&para;</a></h2>
+<h3 id="25">问题25：分布式事务（两阶段提交）<a class="headerlink" href="#25" title="Permanent link">&para;</a></h3>
+<ol>
+<li>PREPARE TRANSACTION 做了什么？</li>
+<li>Prepared Transaction 的状态如何存储？</li>
+<li>COMMIT PREPARED 与常规 COMMIT 的区别？</li>
+<li>如何恢复未完成的 Prepared Transaction？</li>
+</ol>
+<h3 id="26">问题26：逻辑复制中的事务<a class="headerlink" href="#26" title="Permanent link">&para;</a></h3>
+<ol>
+<li>逻辑解码如何追踪事务的开始和结束？</li>
+<li>DecodeTransaction 函数的作用？</li>
+<li>大事务如何分段传输？</li>
+<li>逻辑槽（logical slot）与事务的关系？</li>
+</ol>
+<h3 id="27">问题27：事务快照导出<a class="headerlink" href="#27" title="Permanent link">&para;</a></h3>
+<ol>
+<li>什么是"事务快照导出（txid_snapshot）"？</li>
+<li>txid_snapshot_xmin() 等函数有什么用途？</li>
+<li>如何用快照导出来实现跨会话的一致性读？</li>
+</ol>
+<hr />
+<h2 id="28-30">第十层：源码细节（问题28-30）<a class="headerlink" href="#28-30" title="Permanent link">&para;</a></h2>
+<h3 id="28">问题28：全局变量与进程本地存储<a class="headerlink" href="#28" title="Permanent link">&para;</a></h3>
+<ol>
+<li>CurrentTransactionState 的作用？</li>
+<li>MyProc 结构体记录了什么信息？</li>
+<li>TransactionId 如何在全局范围内保持唯一性？</li>
+<li>为什么需要 procArray（活跃事务数组）？</li>
+</ol>
+<h3 id="29">问题29：内存上下文与事务生命周期<a class="headerlink" href="#29" title="Permanent link">&para;</a></h3>
+<ol>
+<li>TopMemoryContext、CurTransactionContext、MessageContext 各的作用？</li>
+<li>为什么每个事务需要独立的内存上下文？</li>
+<li>内存溢出时如何清理？</li>
+<li>pfree() 与 MemoryContextDelete() 的区别？</li>
+</ol>
+<h3 id="30">问题30：边界条件与异常处理<a class="headerlink" href="#30" title="Permanent link">&para;</a></h3>
+<ol>
+<li>事务 ID 溢出（XID wraparound）如何处理？</li>
+<li>进程意外终止时，事务资源如何清理？</li>
+<li>客户端连接突然断开，事务如何回滚？</li>
+<li>递归事务调用的限制是什么？</li>
+</ol>
+<hr />
+<h2 id="_2">快速索引<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>问题范围</th>
+<th>问题编号</th>
+<th>核心源文件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基础事务模型</td>
+<td>1-3</td>
+<td>xact.c</td>
+</tr>
+<tr>
+<td>MVCC 与隔离</td>
+<td>4-6</td>
+<td>snapmgr.c, procarray.c</td>
+</tr>
+<tr>
+<td>WAL 与持久化</td>
+<td>7-9</td>
+<td>xlog.c, xloginsert.c</td>
+</tr>
+<tr>
+<td>并发控制</td>
+<td>10-12</td>
+<td>lock.c, deadlock.c</td>
+</tr>
+<tr>
+<td>子事务与保存点</td>
+<td>13-15</td>
+<td>xact.c</td>
+</tr>
+<tr>
+<td>事务交互</td>
+<td>16-18</td>
+<td>sinval.c, trigger.c, syncrep.c</td>
+</tr>
+<tr>
+<td>性能与优化</td>
+<td>19-21</td>
+<td>xact.c, xlog.c</td>
+</tr>
+<tr>
+<td>故障与恢复</td>
+<td>22-24</td>
+<td>xlog.c, clog.c</td>
+</tr>
+<tr>
+<td>高级特性</td>
+<td>25-27</td>
+<td>twophase.c, logical.c</td>
+</tr>
+<tr>
+<td>源码细节</td>
+<td>28-30</td>
+<td>proc.c, mmgr.c, miscadmin.c</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>建议学习顺序：</strong> 1→2→3→4→7→10→19→25→28，然后根据兴趣深入具体方向。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

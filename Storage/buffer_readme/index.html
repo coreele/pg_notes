@@ -1,0 +1,2309 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../../QueryProcess/update/">
+      
+      
+        <link rel="next" href="../lock_0_overview/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>关于共享缓冲区访问规则的说明 - PG Notes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="PG Notes" class="md-header__button md-logo" aria-label="PG Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PG Notes
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              关于共享缓冲区访问规则的说明
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PG Notes" class="md-nav__button md-logo" aria-label="PG Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PG Notes
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pg_notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Begin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Begin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/acrh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL 架构
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/boot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    启动
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/code_dir/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    源码目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/compile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    源码编译（macOS 15.4.1）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/tcop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    (tcop)Traffic COntrol Program
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Executor
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Executor
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Executor/exec_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Executor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Executor/exec_fp_modl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    从函数的角度理解数据库执行器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Executor/trigger_case/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trigger case
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Msic
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Msic
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Msic/cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Msic/temp_portal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portal ≈ Cursor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QueryProcess
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    QueryProcess
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/0_Overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心函数 exec_simple_query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/1_Parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    语法分析 pg_parse_query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/2_Analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    语义分析 parse_analyze_fixedparams
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/3_Planner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planner
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/4_Executor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Executor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/delete/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Delete
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/exec_simple_query/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    insert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/insert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Insert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HOT update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Storage
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于共享缓冲区访问规则的说明
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于共享缓冲区访问规则的说明
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pins（引脚/引用计数）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#buffer-content-locks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Buffer Content Locks（缓冲区内容锁）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Buffer Content Locks（缓冲区内容锁）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#buffer-access-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓冲区访问规则 (Buffer access rules)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buffer-managers-internal-locking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓冲区管理器的内部锁定 (Buffer Manager's Internal Locking)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#normal-buffer-replacement-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正常缓冲区替换策略 (Normal Buffer Replacement Strategy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buffer-ring-replacement-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓冲区环替换策略 (Buffer Ring Replacement Strategy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#background-writer-background-writers-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background Writer 的处理 (Background Writer's Processing)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lock_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lock Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lock_1_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    锁概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lock_2_update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Locks in update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lock_3_conflict/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lock conflict
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../page/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transaction
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transaction
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/mvcc_snapshot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MVCC, Snapshot, Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/mvcc_visibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    可见性检查
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/problems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/problems_lock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL 锁机制源码研习路线图
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transaction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_commit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    提交事务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_insert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    事务管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_iso/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repeatable Read and SERIALIZABLE
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PG中的事务状态
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_vxid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深度理解 PostgreSQL 虚拟事务 ID (VXID)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_xid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PG 事务物理事务id
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Utils
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryContext 介绍
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_1_top/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TopMemoryContext
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_2_query/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QueryContext
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_3_buf_res/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryContext &amp; Buffer Manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_4_impl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryContext 多态实现
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Context System Design Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/resowner_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ResourceOwner
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/resowner_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resowner readme
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pins（引脚/引用计数）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#buffer-content-locks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Buffer Content Locks（缓冲区内容锁）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Buffer Content Locks（缓冲区内容锁）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#buffer-access-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓冲区访问规则 (Buffer access rules)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buffer-managers-internal-locking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓冲区管理器的内部锁定 (Buffer Manager's Internal Locking)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#normal-buffer-replacement-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正常缓冲区替换策略 (Normal Buffer Replacement Strategy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buffer-ring-replacement-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        缓冲区环替换策略 (Buffer Ring Replacement Strategy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#background-writer-background-writers-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background Writer 的处理 (Background Writer's Processing)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">关于共享缓冲区访问规则的说明<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<p><strong>(Notes About Shared Buffer Access Rules)</strong></p>
+<p>共享磁盘缓冲区有两种独立的访问控制机制：<strong>引用计数</strong>（也称为 <strong>Pin 计数</strong>）和 <strong>缓冲区内容锁</strong>。（实际上还有第三层访问控制：在合法访问属于某个关系的任何页面之前，必须持有该关系的适当类型的锁。）</p>
+<h2 id="pins">Pins（引脚/引用计数）<a class="headerlink" href="#pins" title="Permanent link">&para;</a></h2>
+<p>在对缓冲区进行任何操作之前，必须先“持有该缓冲区的 Pin”（增加其引用计数）。未 pinned 的缓冲区随时可能被回收并用于其他页面，因此访问它是不安全的。
+通常通过 <code>ReadBuffer</code> 获取 Pin，通过 <code>ReleaseBuffer</code> 释放 Pin。
+单个后端进程同时多次 Pin 同一个页面不仅是允许的，而且很常见；缓冲区管理器会高效地处理这种情况。
+长时间持有 Pin 也是允许的——例如，顺序扫描会在处理完页面上的所有元组之前一直持有当前页面的 Pin，如果该扫描是连接操作的外部扫描，这可能会持续相当长的时间。同样，B-Tree 索引扫描也可能持有当前索引页面的 Pin，这是可以的，因为正常操作永远不会等待页面的 Pin 计数降为零。（任何可能需要等待 Pin 计数归零的操作，转而通过等待获取关系级锁来处理，这就是为什么你<strong>最好先持有关系级锁</strong>的原因。）但是，<strong>Pin 不能跨越事务边界持有</strong>。</p>
+<h2 id="buffer-content-locks">Buffer Content Locks（缓冲区内容锁）<a class="headerlink" href="#buffer-content-locks" title="Permanent link">&para;</a></h2>
+<p>缓冲区锁有两种：<strong>共享锁</strong>和<strong>排他锁</strong>，其行为符合预期：多个后端可以持有同一缓冲区的共享锁，但排他锁会阻止其他人持有任何共享或排他锁。（这些也可以称为 READ 锁和 WRITE 锁。）
+这些锁旨在短期持有：不应长时间持有。缓冲区锁通过 <code>LockBuffer()</code> 获取和释放。
+单个后端尝试对同一缓冲区获取多个锁是<strong>行不通的</strong>。在尝试锁定缓冲区之前，必须先 <strong>Pin</strong> 住该缓冲区。</p>
+<h3 id="buffer-access-rules">缓冲区访问规则 (Buffer access rules)<a class="headerlink" href="#buffer-access-rules" title="Permanent link">&para;</a></h3>
+<ol>
+<li>
+<p><strong>扫描页面中的元组</strong>：必须持有 Pin 以及共享或排他内容锁。要检查共享缓冲区中元组的提交状态（XIDs 和状态位），同样必须持有 Pin 以及共享或排他锁。</p>
+</li>
+<li>
+<p><strong>确定元组可见后释放内容锁</strong>：一旦确定某个元组是感兴趣的（对当前事务可见），就可以放下内容锁，但只要持有缓冲区 Pin，就可以继续访问该元组的数据。堆扫描（heap scans）通常这样做，因为 <code>heap_fetch</code> 返回的元组包含指向共享缓冲区中元组数据的指针。因此，只要持有 Pin，元组就不会消失（见规则5）。其状态可能会改变，但在初始可见性判定完成后，假设这无关紧要。</p>
+</li>
+<li>
+<p><strong>修改元组</strong>：要添加元组或更改现有元组的 <code>xmin/xmax</code> 字段，必须持有包含该元组的缓冲区的 Pin 和<strong>排他</strong>内容锁。这确保了在进行可见性检查时，其他人不会看到元组的半更新状态。</p>
+</li>
+<li>
+<p><strong>更新提交状态位（Hint Bits）</strong>：在仅持有缓冲区的共享锁和 Pin 的情况下，更新元组的提交状态位（即对 <code>t_infomask</code> 执行 OR 操作，设置 <code>HEAP_XMIN_COMMITTED</code>, <code>HEAP_XMIN_INVALID</code>, <code>HEAP_XMAX_COMMITTED</code>, 或 <code>HEAP_XMAX_INVALID</code>）是被允许的。</p>
+<ul>
+<li><strong>原因</strong>：另一个后端如果在大约同一时间查看该元组，也会将相同的位 OR 进字段，因此冲突更新的风险很小或没有。即使真的发生冲突，也仅仅意味着一次位更新丢失，稍后需要重做。</li>
+<li><strong>注意</strong>：这四个位只是<strong>提示</strong>（它们缓存了 <code>pg_xact</code> 中事务状态的查找结果），所以如果因冲突更新而被重置为零，也不会造成太大危害。</li>
+<li><strong>例外</strong>：冻结元组是通过同时设置 <code>HEAP_XMIN_INVALID</code> 和 <code>HEAP_XMIN_COMMITTED</code> 来完成的；这是一个关键更新，因此需要<strong>排他</strong>缓冲区锁（并且必须进行 WAL 日志记录）。</li>
+</ul>
+</li>
+<li>
+<p><strong>物理删除元组或压缩空闲空间</strong>：必须持有 Pin 和<strong>排他</strong>锁，<em>并且</em>在持有排他锁期间观察到缓冲区的共享引用计数为 1（即没有其他后端持有 Pin）。</p>
+<ul>
+<li>如果满足这些条件，则在排他锁释放之前，没有其他后端可以执行页面扫描，也没有其他后端可以持有对现有元组的引用（它可能期望再次检查该元组）。</li>
+<li><strong>注意</strong>：另一个后端可能在执行清理时 Pin 住缓冲区（增加 refcount），但在获取共享或排他内容锁之前，它无法实际检查页面。</li>
+</ul>
+<blockquote>
+<p>获取规则 #5 所需的锁由 bufmgr 例程 <code>LockBufferForCleanup()</code> 或 <code>ConditionalLockBufferForCleanup()</code> 完成。它们首先获取排他锁，然后检查共享 Pin 计数当前是否为 1。如果不是，<code>ConditionalLockBufferForCleanup()</code> 释放排他锁并返回 false；而 <code>LockBufferForCleanup()</code> 释放排他锁（但不释放调用者的 Pin）并等待，直到被另一个后端信号唤醒，然后重试。当 <code>UnpinBuffer</code> 将共享 Pin 计数递减到 1 时，会发生信号。如上所述，此操作在获取锁之前可能需要等待很长时间，但这对于并发 VACUUM 来说应该没关系。当前实现仅支持每个特定共享缓冲区上只有一个等待 Pin 计数为 1 的等待者。这对于 VACUUM 的使用来说已经足够，因为我们不允许在同一关系上并发进行多个 VACUUM。任何希望在恢复或 VACUUM 之外获取清理锁的人必须使用该函数的条件变体。</p>
+</blockquote>
+</li>
+</ol>
+<hr />
+<h3 id="buffer-managers-internal-locking">缓冲区管理器的内部锁定 (Buffer Manager's Internal Locking)<a class="headerlink" href="#buffer-managers-internal-locking" title="Permanent link">&para;</a></h3>
+<p>在 PostgreSQL 8.1 之前，共享缓冲区管理器的所有操作都受单一的系统级锁 <code>BufMgrLock</code> 保护，这 unsurprisingly（不出所料地）成为争用的来源。新的锁定方案避免了在常见代码路径中获取系统级排他锁。其工作原理如下：</p>
+<ul>
+<li>
+<p><strong>BufMappingLock</strong>：有一个系统级的 LWLock，名为 <code>BufMappingLock</code>，名义上保护从缓冲区标签（页面标识符）到缓冲区的映射。（物理上，可以认为它保护由 <code>buf_table.c</code> 维护的哈希表。）</p>
+<ul>
+<li>要查找是否存在某个标签对应的缓冲区，只需获取 <code>BufMappingLock</code> 的<strong>共享锁</strong>。</li>
+<li><strong>注意</strong>：在释放 <code>BufMappingLock</code> 之前，必须 Pin 住找到的缓冲区（如果有）。</li>
+<li>要更改任何缓冲区的页面分配，必须持有 <code>BufMappingLock</code> 的<strong>排他锁</strong>。在调整缓冲区头字段和更改 <code>buf_table</code> 哈希表时必须持有此锁。唯一需要排他锁的常见操作是读取尚未在共享缓冲区中的页面，这至少需要一个内核调用，通常还需要等待 I/O，因此无论如何都会很慢。</li>
+</ul>
+</li>
+<li>
+<p><strong>分区 BufMappingLock</strong>：从 PG 8.2 开始，<code>BufMappingLock</code> 已被拆分为 <code>NUM_BUFFER_PARTITIONS</code> 个单独的锁，每个锁保护一部分缓冲区标签空间。这进一步减少了正常代码路径中的争用。特定缓冲区标签所属的分区由标签哈希值的低位决定。上述规则独立适用于每个分区。如果需要同时锁定多个分区，必须按分区编号顺序锁定它们，以避免死锁风险。</p>
+</li>
+<li>
+<p><strong>buffer_strategy_lock</strong>：一个单独的系统级自旋锁 <code>buffer_strategy_lock</code>，为访问缓冲区空闲列表或选择替换缓冲区的操作提供互斥。这里使用自旋锁而不是轻量级锁（LWLock）以提高效率；在持有 <code>buffer_strategy_lock</code> 时，不应获取任何其他类型的锁。这对于允许多个后端以合理的并发性进行缓冲区替换至关重要。</p>
+</li>
+<li>
+<p><strong>缓冲区头自旋锁</strong>：每个缓冲区头包含一个自旋锁，在检查或更改该缓冲区头的字段时必须获取。这允许诸如 <code>ReleaseBuffer</code> 之类的操作在不获取任何系统级锁的情况下进行本地状态更改。我们使用自旋锁而不是 LWLock，因为没有情况需要持有该锁超过几条指令的时间。</p>
+<ul>
+<li><strong>注意</strong>：缓冲区头的自旋锁<strong>不控制</strong>对缓冲区内数据的访问。每个缓冲区头还包含一个 LWLock，即“<strong>缓冲区内容锁</strong>”，它<em>确实</em>代表访问缓冲区中数据的权利。它按照上述规则使用。</li>
+</ul>
+</li>
+<li>
+<p><strong>BM_IO_IN_PROGRESS 标志</strong>：充当一种锁，用于等待缓冲区上的 I/O 完成（在版本 14 之前，它伴随着一个每缓冲区的 LWLock）。执行读取或写入的进程在此期间设置该标志，需要等待其清除的进程则在条件变量上睡眠。</p>
+</li>
+</ul>
+<hr />
+<h3 id="normal-buffer-replacement-strategy">正常缓冲区替换策略 (Normal Buffer Replacement Strategy)<a class="headerlink" href="#normal-buffer-replacement-strategy" title="Permanent link">&para;</a></h3>
+<p>有一个“空闲列表”（free list），其中的缓冲区是替换的主要候选者。特别是，完全空闲（不包含有效页面）的缓冲区始终在此列表中。如果我们认为某些页面不太可能很快被需要，也可以将它们放入此列表；然而，当前算法从不这样做。
+该列表是使用缓冲区头中的字段链接的单链表；我们在全局变量中维护头尾指针。（注意：虽然列表链接在缓冲区头中，但它们被认为受 <code>buffer_strategy_lock</code> 保护，而不是缓冲区头自旋锁。）</p>
+<p>当没有空闲缓冲区可用时，为了选择要回收的受害者缓冲区，我们使用简单的 <strong>Clock-Sweep（时钟扫描）算法</strong>，这避免了在常见操作期间获取系统级锁。其工作原理如下：</p>
+<p>每个缓冲区头包含一个 <strong>usage counter（使用计数器）</strong>，每当缓冲区被 Pin 时，该计数器就会递增（上限为一个较小的限制值）。（这只需要缓冲区头自旋锁，无论如何为了增加缓冲区引用计数都必须获取该锁，因此几乎是免费的。）</p>
+<p>“时钟指针”是一个缓冲区索引 <code>nextVictimBuffer</code>，它在所有可用缓冲区中循环移动。<code>nextVictimBuffer</code> 受 <code>buffer_strategy_lock</code> 保护。</p>
+<p>需要获取受害者缓冲区的进程的算法如下：</p>
+<ol>
+<li>获取 <code>buffer_strategy_lock</code>。</li>
+<li>如果缓冲区空闲列表非空，移除其头部缓冲区。释放 <code>buffer_strategy_lock</code>。如果该缓冲区被 Pin 住或使用计数不为零，则不能使用；忽略它并回到步骤 1。否则，Pin 住该缓冲区并返回。</li>
+<li>否则，缓冲区空闲列表为空。选择 <code>nextVictimBuffer</code> 指向的缓冲区，并为下次循环推进 <code>nextVictimBuffer</code>。释放 <code>buffer_strategy_lock</code>。</li>
+<li>如果选定的缓冲区被 Pin 住或使用计数不为零，则不能使用。递减其使用计数（如果不为零），重新获取 <code>buffer_strategy_lock</code>，并返回步骤 3 以检查下一个缓冲区。</li>
+<li>Pin 住选定的缓冲区，并返回。</li>
+</ol>
+<p>（注意：如果选定的缓冲区是脏的，我们在回收它之前必须将其写出；如果与此同时其他人 Pin 住了该缓冲区，我们将不得不放弃并尝试另一个缓冲区。然而，这不是基本选择受害者缓冲区算法的关注点。）</p>
+<hr />
+<h3 id="buffer-ring-replacement-strategy">缓冲区环替换策略 (Buffer Ring Replacement Strategy)<a class="headerlink" href="#buffer-ring-replacement-strategy" title="Permanent link">&para;</a></h3>
+<p>当运行需要一次性访问大量页面的查询时（例如 VACUUM 或大型顺序扫描），会使用不同的策略。
+仅由此类扫描触及的页面不太可能很快再次被需要，因此与其运行正常的时钟扫描算法并吹掉整个缓冲区缓存，不如使用正常的时钟扫描算法分配一个小环（ring）的缓冲区，并在整个扫描过程中重用这些缓冲区。这也意味着由此类语句引起的大部分写流量将由后端本身完成，而不是推卸给其他进程。</p>
+<ul>
+<li>
+<p><strong>顺序扫描</strong>：使用 <strong>256KB</strong> 的环。这足够小以放入 L2 缓存，这使得从 OS 缓存传输页面到共享缓冲区缓存变得高效。即使更少通常也足够了，但环必须足够大以容纳扫描中同时被 Pin 的所有页面。256KB 也应该足以留下一个小缓存轨迹，供其他后端加入同步顺序扫描。如果环缓冲区被弄脏且其 LSN 更新，我们通常必须在重用缓冲区之前写入并刷新 WAL；在这种情况下，我们改为从环中丢弃该缓冲区，并（稍后）使用正常的时钟扫描算法选择替换。因此，这种策略最适用于只读扫描（或者最多更新 hint bits 的扫描）。在修改扫描中每个页面的扫描中，如批量 UPDATE 或 DELETE，环中的缓冲区将始终被弄脏，环策略实际上退化为正常策略。</p>
+</li>
+<li>
+<p><strong>VACUUM</strong>：像顺序扫描一样使用环，但是，这个环的大小由 GUC 参数 <code>vacuum_buffer_usage_limit</code> 控制。脏页面不会从环中移除。相反，如果需要，会刷新 WAL 以允许重用缓冲区。在 8.3 引入缓冲区环策略之前，VACUUM 的缓冲区被发送到空闲列表，这实际上是一个大小为 1 的缓冲区环，导致过多的 WAL 刷新。</p>
+</li>
+<li>
+<p><strong>批量写入</strong>：工作方式类似于 VACUUM。目前这仅适用于 <code>COPY IN</code> 和 <code>CREATE TABLE AS SELECT</code>。（使 seqscan UPDATE 和 DELETE 使用 bulkwrite 策略是否有趣？）对于批量写入，我们使用 <strong>16MB</strong> 的环大小（但不超过 <code>shared_buffers</code> 的 1/8）。较小的尺寸已被证明会导致 COPY 因 WAL 刷新而过于频繁地阻塞。虽然后台 vacuum 因执行自己的 WAL 刷新而变慢是可以接受的，但我们希望 COPY 不受此影响，所以我们让它使用更多的缓冲区区域。</p>
+</li>
+</ul>
+<hr />
+<h3 id="background-writer-background-writers-processing">Background Writer 的处理 (Background Writer's Processing)<a class="headerlink" href="#background-writer-background-writers-processing" title="Permanent link">&para;</a></h3>
+<p>Background Writer 旨在写出可能很快被回收的页面，从而将写入工作从活动后端卸载。
+为此，它从 <code>nextVictimBuffer</code> 的当前位置向前循环扫描（它不会改变 <code>nextVictimBuffer</code>！），寻找那些<strong>脏的</strong>、<strong>未被 Pin 住</strong>且<strong>未标记正使用计数</strong>的缓冲区。它 Pin 住、写入并释放任何这样的缓冲区。</p>
+<p>如果我们可以假设读取 <code>nextVictimBuffer</code> 是一个原子动作，那么 writer 甚至不需要获取 <code>buffer_strategy_lock</code> 来寻找要写入的缓冲区；它只需要自旋锁定每个缓冲区头足够长的时间来检查 dirtybit。即使没有这个假设，writer 也只需要获取锁足够长的时间来读取变量值，而不是在扫描缓冲区时。（与 PG 8.0 相比，这是 writer 争用成本的实质性改进。）</p>
+<p>Background Writer 在写出缓冲区时对其获取<strong>共享内容锁</strong>（任何将缓冲区内容刷新到磁盘的人也必须这样做）。这确保了传输到磁盘的页面图像具有合理的一致性。我们可能会错过一两个 hint-bit 更新，但这不是问题，原因与缓冲区访问规则下提到的相同。</p>
+<p>从 8.4 开始，background writer 在执行某种形式的潜在扩展恢复时在恢复模式期间启动。它提供与正常处理相同的服务，除了它写入的检查点在技术上是 <strong>restartpoints</strong>。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

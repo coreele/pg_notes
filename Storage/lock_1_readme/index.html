@@ -1,0 +1,2689 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../lock_0_overview/">
+      
+      
+        <link rel="next" href="../lock_2_update/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>锁概述 - PG Notes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="PG Notes" class="md-header__button md-logo" aria-label="PG Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PG Notes
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              锁概述
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PG Notes" class="md-nav__button md-logo" aria-label="PG Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PG Notes
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pg_notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Begin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Begin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/acrh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL 架构
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/boot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    启动
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/code_dir/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    源码目录
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/compile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    源码编译（macOS 15.4.1）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Begin/tcop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    (tcop)Traffic COntrol Program
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Executor
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Executor
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Executor/exec_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Executor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Executor/exec_fp_modl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    从函数的角度理解数据库执行器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Executor/trigger_case/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trigger case
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Msic
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Msic
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Msic/cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Msic/temp_portal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portal ≈ Cursor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QueryProcess
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    QueryProcess
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/0_Overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心函数 exec_simple_query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/1_Parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    语法分析 pg_parse_query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/2_Analyzer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    语义分析 parse_analyze_fixedparams
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/3_Planner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planner
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/4_Executor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Executor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/delete/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Delete
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/exec_simple_query/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    insert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/insert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Insert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QueryProcess/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HOT update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Storage
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../buffer_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    关于共享缓冲区访问规则的说明
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lock_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lock Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    锁概述
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    锁概述
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        锁数据结构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="锁数据结构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LOCK
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proclock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PROCLOCK
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心要点总结
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        保存位置
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        锁管理器内部锁定机制
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="锁管理器内部锁定机制">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        处理锁请求函数签名
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fast-path-locking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        快速路径锁定 (Fast Path Locking)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-deadlock-detection-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Deadlock Detection Algorithm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#miscellaneous-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Miscellaneous Notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-locking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group Locking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-locks-advisory-locks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Locks (Advisory Locks)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#locking-during-hot-standby" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Locking during Hot Standby
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lock_2_update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Locks in update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lock_3_conflict/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lock conflict
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../page/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transaction
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transaction
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/mvcc_snapshot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MVCC, Snapshot, Isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/mvcc_visibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    可见性检查
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/problems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Problems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/problems_lock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL 锁机制源码研习路线图
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transaction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_commit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    提交事务
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_insert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    事务管理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_iso/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repeatable Read and SERIALIZABLE
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PG中的事务状态
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_vxid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深度理解 PostgreSQL 虚拟事务 ID (VXID)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Transaction/trans_xid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PG 事务物理事务id
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Utils
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryContext 介绍
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_1_top/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TopMemoryContext
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_2_query/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QueryContext
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_3_buf_res/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryContext &amp; Buffer Manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_4_impl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MemoryContext 多态实现
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/mmgr_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Context System Design Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/resowner_0_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ResourceOwner
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Utils/resowner_readme/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resowner readme
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        锁数据结构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="锁数据结构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LOCK
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proclock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PROCLOCK
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心要点总结
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        保存位置
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        锁管理器内部锁定机制
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="锁管理器内部锁定机制">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        处理锁请求函数签名
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fast-path-locking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        快速路径锁定 (Fast Path Locking)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-deadlock-detection-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Deadlock Detection Algorithm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#miscellaneous-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Miscellaneous Notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-locking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group Locking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-locks-advisory-locks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Locks (Advisory Locks)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#locking-during-hot-standby" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Locking during Hot Standby
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">锁概述<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<p>Postgres 使用四种类型的进程间锁：</p>
+<ul>
+<li>
+<p><strong>自旋锁 (Spinlocks)。</strong> 这类锁旨在用于<em>极</em>短期的锁定。如果锁需要持有超过几十条指令的时间，或者跨越任何类型的内核调用（甚至是调用一个非平凡的子程序），请不要使用自旋锁。自旋锁主要用作轻量级锁的基础设施。如果可用，它们是使用硬件原子测试并设置 (atomic-test-and-set) 指令实现的。等待的进程会进行忙循环 (busy-loop)，直到它们获取到锁。不提供死锁检测、出错时自动释放或任何其他便利功能。如果在一分钟左右无法获取锁，会有超时机制（相对于预期的锁持有时间，这大约是永远，因此这肯定是一个错误条件）。</p>
+</li>
+<li>
+<p><strong>轻量级锁 (Lightweight locks, LWLocks)。</strong> 这些锁通常用于互锁访问共享内存中的数据结构。LWLock 支持排他和共享两种锁模式（用于共享对象的读/写和只读访问）。不提供死锁检测，但 LWLock 管理器会在 <code>elog()</code> 恢复期间自动释放已持有的 LWLock，因此在持有 LWLock 时抛出错误是安全的。当没有锁竞争时，获取或释放 LWLock 非常快（几十条指令）。当进程必须等待 LWLock 时，它会阻塞在 SysV 信号量上，以便不消耗 CPU 时间。等待的进程将按到达顺序被授予锁。没有超时机制。</p>
+</li>
+<li>
+<p><strong>常规锁 (Regular locks)（又称重量级锁 heavyweight locks）。</strong> 常规锁管理器支持多种锁模式，具有表驱动 (table-driven) 语义，并且拥有完整的死锁检测和事务结束时自动释放的功能。所有用户驱动的锁请求都应使用常规锁。</p>
+</li>
+<li>
+<p><strong>SIReadLock 谓词锁 (predicate locks)。</strong> 详情请参见单独的 README-SSI 文件。</p>
+</li>
+</ul>
+<p>获取自旋锁或轻量级锁会导致查询取消 (query cancel) 和 <code>die()</code> 中断被挂起 (held off)，直到所有此类锁被释放。然而，常规锁不存在此类限制。另外请注意，我们在等待常规锁时可以接受查询取消和 <code>die()</code> 中断，但在等待自旋锁或 LW 锁时不会接受它们。因此，当等待时间可能超过几秒钟时，使用 LW 锁并不是一个好主意。</p>
+<p>本 README 文件的其余部分将详细讨论常规锁管理器。</p>
+<h2 id="_2">锁数据结构<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p><strong>锁方法 (Lock methods)</strong> 描述了整体的锁定行为。目前有两种锁方法：<code>DEFAULT</code>（默认）和 <code>USER</code>（用户）。</p>
+<p><strong>锁模式 (Lock modes)</strong> 描述了锁的类型（读/写 或 共享/排他）。原则上，每种锁方法都可以拥有自己的一套锁模式及不同的冲突规则，但目前 <code>DEFAULT</code> 和 <code>USER</code> 方法使用的是完全相同的锁模式集合。有关更多细节，请参阅 <code>src/include/storage/lock.h</code>。（在代码和文档的某些地方，锁模式也被称为锁类型。）</p>
+<p>在共享内存中记录锁主要有两种机制：</p>
+<ol>
+<li>
+<p><strong>主要机制</strong>使用两个核心结构体：</p>
+<ul>
+<li><strong><code>LOCK</code> 结构体</strong>：针对每个可锁定对象（per-lockable-object）。只要某个可锁定对象当前有被持有或被请求的锁，就会存在一个对应的 <code>LOCK</code> 对象。</li>
+<li><strong><code>PROCLOCK</code> 结构体</strong>：针对每个后端进程与每个 <code>LOCK</code> 对象之间的锁定关系（per-lock-and-requestor）。如果一个后端进程正在持有或请求某个 <code>LOCK</code> 对象上的锁，就会存在一个对应的 <code>PROCLOCK</code> 结构体。</li>
+</ul>
+</li>
+<li>
+<p><strong>特殊的“快速路径” (fast path) 机制</strong>：后端进程可以使用此机制来记录数量有限且具有非常特定特征的锁。这些锁必须满足以下条件：</p>
+<ul>
+<li>必须使用 <code>DEFAULT</code> 锁方法；</li>
+<li>必须代表对数据库关系（<strong>relation</strong>）的锁（不能是共享关系）；</li>
+<li><strong>必须是“弱”锁</strong>，即不太可能发生冲突的锁（具体指 <code>AccessShareLock</code>、<code>RowShareLock</code> 或 <code>RowExclusiveLock</code>）；</li>
+<li>系统必须能够快速验证不可能存在任何冲突的锁。
+  有关更多细节，请参阅下文的“快速路径锁定 (Fast Path Locking)"。</li>
+</ul>
+</li>
+</ol>
+<p>此外，每个后端进程还会为它当前正在持有或请求的每个可锁定对象及锁模式，维护一个<strong>非共享的 <code>LOCALLOCK</code> 结构体</strong>。
+共享锁结构体仅允许针对每个“可锁定对象/锁模式/后端进程”组合进行<strong>一次</strong>锁授予。然而，在后端进程内部，同一个锁可能在事务中被多次请求甚至释放，也可以同时以事务级和会话级的方式持有。内部的<strong>请求计数</strong>保存在 <code>LOCALLOCK</code> 中，这样就不需要访问共享数据结构来修改它们了。</p>
+<h3 id="lock">LOCK<a class="headerlink" href="#lock" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">LOCK</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="cm">/* hash key */</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="n">LOCKTAG</span><span class="w">     </span><span class="n">tag</span><span class="p">;</span><span class="w">            </span><span class="cm">/* unique identifier of lockable object */</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="cm">/* data */</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="n">LOCKMASK</span><span class="w">    </span><span class="n">grantMask</span><span class="p">;</span><span class="w">      </span><span class="cm">/* bitmask for lock types already granted */</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="n">LOCKMASK</span><span class="w">    </span><span class="n">waitMask</span><span class="p">;</span><span class="w">       </span><span class="cm">/* bitmask for lock types awaited */</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="n">dlist_head</span><span class="w">  </span><span class="n">procLocks</span><span class="p">;</span><span class="w">      </span><span class="cm">/* list of PROCLOCK objects assoc. with lock */</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="n">dclist_head</span><span class="w"> </span><span class="n">waitProcs</span><span class="p">;</span><span class="w">      </span><span class="cm">/* list of PGPROC objects waiting on lock */</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="kt">int</span><span class="w">         </span><span class="n">requested</span><span class="p">[</span><span class="n">MAX_LOCKMODES</span><span class="p">];</span><span class="w">   </span><span class="cm">/* counts of requested locks */</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="kt">int</span><span class="w">         </span><span class="n">nRequested</span><span class="p">;</span><span class="w">     </span><span class="cm">/* total of requested[] array */</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="kt">int</span><span class="w">         </span><span class="n">granted</span><span class="p">[</span><span class="n">MAX_LOCKMODES</span><span class="p">];</span><span class="w"> </span><span class="cm">/* counts of granted locks */</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="kt">int</span><span class="w">         </span><span class="n">nGranted</span><span class="p">;</span><span class="w">       </span><span class="cm">/* total of granted[] array */</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">}</span><span class="w"> </span><span class="n">LOCK</span><span class="p">;</span>
+</span></code></pre></div>
+<p>锁管理器的 <strong><code>LOCK</code> 对象</strong>包含以下字段：</p>
+<ul>
+<li><strong><code>tag</code> (标签)</strong></li>
+<li>这是用于在共享内存锁哈希表中对锁进行哈希处理的关键字段。<code>tag</code> 的内容本质上<strong>定义了一个独立的可锁定对象</strong>。</li>
+<li>关于支持的可锁定对象类型的详细信息，请参阅 <code>include/storage/lock.h</code>。</li>
+<li>
+<p>它被声明为一个单独的结构体，以确保我们总是能清零正确数量的字节。<strong>至关重要</strong>的是，编译器可能在结构体中插入的任何对齐填充字节（alignment-padding bytes）都必须被清零，否则哈希计算将是随机的。（目前，我们小心翼翼地定义 <code>struct LOCKTAG</code>，以确保其中没有填充字节。）</p>
+</li>
+<li>
+<p><strong><code>grantMask</code> (授予掩码)</strong></p>
+</li>
+<li>这是一个位掩码 (bitmask)，指示当前在该可锁定对象上持有哪些类型的锁。</li>
+<li>它用于（结合锁表的冲突表）确定新的锁请求是否会与现有的已持有锁类型发生冲突。</li>
+<li>冲突是通过将 <code>grantMask</code> 与所请求锁类型对应的冲突表条目进行<strong>按位与 (bitwise AND)</strong> 操作来确定的。</li>
+<li>
+<p>当且仅当 <code>granted[i] &gt; 0</code> 时，<code>grantMask</code> 的第 <code>i</code> 位为 1。</p>
+</li>
+<li>
+<p><strong><code>waitMask</code> (等待掩码)</strong></p>
+</li>
+<li>这是一个位掩码，显示当前正在等待哪些类型的锁。</li>
+<li>
+<p>当且仅当 <code>requested[i] &gt; granted[i]</code> 时，<code>waitMask</code> 的第 <code>i</code> 位为 1。</p>
+</li>
+<li>
+<p><strong><code>procLocks</code> (进程锁链表)</strong></p>
+</li>
+<li>这是一个位于<strong>共享内存</strong>中的队列，包含与该锁对象关联的所有 <code>PROCLOCK</code> 结构体。</li>
+<li>
+<p>请注意，<strong>已授予</strong>和<strong>正在等待</strong>的 <code>PROCLOCK</code> 都在这个列表中（事实上，同一个 <code>PROCLOCK</code> 可能已经持有一些已授予的锁，同时还在等待更多的锁！）。</p>
+</li>
+<li>
+<p><strong><code>waitProcs</code> (等待进程队列)</strong></p>
+</li>
+<li>这是一个位于共享内存中的队列，包含所有因等待其他后端释放此锁而处于等待（睡眠）状态的 <code>PGPROC</code> 结构体（对应后端进程）。</li>
+<li>
+<p>进程结构体中持有必要的信息，用于确定当锁被释放时是否应该唤醒该进程。</p>
+</li>
+<li>
+<p><strong><code>nRequested</code> (总请求次数)</strong></p>
+</li>
+<li>记录尝试获取此锁的总次数。</li>
+<li>该计数包括那些因冲突而被放入睡眠状态的进程的尝试。</li>
+<li>如果同一个后端进程先获取了读锁，然后又获取了写锁，它会被计数两次。</li>
+<li>
+<p>（但是，同一个后端进程内部对同一锁/同一模式的多次获取不会在此处重复计数；这些记录仅保存在后端的 <code>LOCALLOCK</code> 结构体中。）</p>
+</li>
+<li>
+<p><strong><code>requested</code> (各模式请求计数数组)</strong></p>
+</li>
+<li>记录每种类型的锁被尝试请求的次数。</li>
+<li>仅使用索引 <code>1</code> 到 <code>MAX_LOCKMODES-1</code> 的元素，因为它们对应于定义的锁类型常量（索引 0 不使用）。</li>
+<li>
+<p>对 <code>requested[]</code> 数组中的所有值求和，结果应等于 <code>nRequested</code>。</p>
+</li>
+<li>
+<p><strong><code>nGranted</code> (总授予次数)</strong></p>
+</li>
+<li>记录成功获取此锁的总次数。</li>
+<li>该计数<strong>不</strong>包括因冲突而正在等待的尝试。</li>
+<li>
+<p>其他的计数规则与 <code>nRequested</code> 相同。</p>
+</li>
+<li>
+<p><strong><code>granted</code> (各模式授予计数数组)</strong></p>
+</li>
+<li>记录当前持有的每种类型的锁的数量。</li>
+<li>同样，仅使用索引 <code>1</code> 到 <code>MAX_LOCKMODES-1</code> 的元素（0 不使用）。</li>
+<li>与 <code>requested[]</code> 类似，对 <code>granted[]</code> 数组中的所有值求和，结果应等于 <code>nGranted</code>。</li>
+</ul>
+<p><strong>不变式约束：</strong>
+我们必须始终满足：</p>
+<ul>
+<li><code>0 &lt;= nGranted &lt;= nRequested</code></li>
+<li>对于每个 <code>i</code>，<code>0 &lt;= granted[i] &lt;= requested[i]</code></li>
+</ul>
+<p>当所有请求计数归零时，<code>LOCK</code> 对象不再需要，可以被释放。</p>
+<h3 id="proclock">PROCLOCK<a class="headerlink" href="#proclock" title="Permanent link">&para;</a></h3>
+<p>锁管理器的 <strong><code>PROCLOCK</code> 对象</strong>包含以下字段：</p>
+<ul>
+<li><strong><code>tag</code> (标签)</strong></li>
+<li>这是用于在共享内存 <code>PROCLOCK</code> 哈希表中对条目进行哈希处理的关键字段。</li>
+<li>它被声明为一个单独的结构体，以确保我们总是能清零正确数量的字节。<strong>至关重要</strong>的是，编译器可能在结构体中插入的任何对齐填充字节（alignment-padding bytes）都必须被清零，否则哈希计算将是随机的。（目前，我们小心翼翼地定义 <code>struct PROCLOCKTAG</code>，以确保其中没有填充字节。）</li>
+<li><strong><code>tag.myLock</code></strong>: 指向此 <code>PROCLOCK</code> 所对应的共享 <code>LOCK</code> 对象的指针。</li>
+<li><strong><code>tag.myProc</code></strong>: 指向拥有此 <code>PROCLOCK</code> 的后端进程的 <code>PGPROC</code> 结构的指针。</li>
+<li>
+<p><strong>注意</strong>：在这里使用指针是安全的，因为 <code>PROCLOCK</code> 的生命周期绝不会超过其关联的锁（<code>LOCK</code>）或其关联的进程（<code>PGPROC</code>）。因此，只要该 <code>PROCLOCK</code> 存在，这个标签就是唯一的，即使相同的指针值在其他时间点可能代表完全不同的含义（即内存复用后）。</p>
+</li>
+<li>
+<p><strong><code>holdMask</code> (持有掩码)</strong></p>
+</li>
+<li>这是一个位掩码，表示此 <code>PROCLOCK</code> <strong>成功获取</strong>的锁模式。</li>
+<li>它应该是 <code>LOCK</code> 对象的 <code>grantMask</code> 的子集。</li>
+<li>同时，如果该 <code>PGPROC</code> 正在等待同一锁对象上的其他模式锁，它也应该是 <code>PGPROC</code> 对象的 <code>heldLocks</code> 掩码的子集。</li>
+<li>
+<p><em>通俗理解</em>：这就是该进程当前“手里实实在在拿着”的锁有哪些。</p>
+</li>
+<li>
+<p><strong><code>releaseMask</code> (释放掩码)</strong></p>
+</li>
+<li>这是一个位掩码，表示在调用 <code>LockReleaseAll</code> 时<strong>即将被释放</strong>的锁模式。</li>
+<li>它必须是 <code>holdMask</code> 的子集（你只能释放你持有的锁）。</li>
+<li><strong>重要并发细节</strong>：这个字段的修改<strong>不需要</strong>获取分区的 LWLock（轻量级锁）。因此，除了拥有此 <code>PROCLOCK</code> 的那个后端进程本身外，<strong>任何其他后端进程检查或修改此字段都是不安全的</strong>。</li>
+<li>
+<p><em>设计意图</em>：这是一种优化。当事务结束需要批量释放所有锁时， owning backend 可以独自快速标记哪些锁要放掉，而无需争抢全局锁，从而提高事务提交/回滚的性能。</p>
+</li>
+<li>
+<p><strong><code>lockLink</code> (锁链表链接)</strong></p>
+</li>
+<li>这是用于将所有属于<strong>同一个 <code>LOCK</code> 对象</strong>的 <code>PROCLOCK</code> 对象链接起来的列表指针。</li>
+<li>
+<p>通过它，可以从 <code>LOCK</code> 对象找到所有对该对象感兴趣（持有或等待）的进程（即前文提到的 <code>procLocks</code> 队列）。</p>
+</li>
+<li>
+<p><strong><code>procLink</code> (进程链表链接)</strong></p>
+</li>
+<li>这是用于将所有属于<strong>同一个后端进程</strong>的 <code>PROCLOCK</code> 对象链接起来的列表指针。</li>
+<li>通过它，可以从 <code>PGPROC</code>（进程结构）快速找到该进程当前参与的所有锁对象。这对于事务结束时快速遍历并释放该进程持有的所有锁非常关键。</li>
+</ul>
+<h3 id="_3">核心要点总结<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>唯一性由指针保证</strong>：<code>tag</code> 直接存储 <code>LOCK*</code> 和 <code>PGPROC*</code> 指针。因为 PG 的内存管理保证了只要 <code>PROCLOCK</code> 活着，它指向的锁和进程就一定活着，所以不用担心悬空指针问题。这也避免了在 tag 中存储复杂的 ID 映射，提升了查找速度。</li>
+<li><strong>双重链表归属</strong>：<ul>
+<li><code>lockLink</code> 让 <code>PROCLOCK</code> 挂在 <strong>锁</strong> 的维度上（方便锁管理器看谁在等这个锁）。</li>
+<li><code>procLink</code> 让 <code>PROCLOCK</code> 挂在 <strong>进程</strong> 的维度上（方便进程看自己持有了哪些锁，或在退出时清理）。</li>
+<li>这使得 <code>PROCLOCK</code> 成为连接“资源”与“请求者”的完美桥梁。</li>
+</ul>
+</li>
+<li><strong>无锁优化 (<code>releaseMask</code>)</strong>：<code>releaseMask</code> 的设计体现了高性能数据库的典型特征——在能保证正确性的前提下（只有所有者能改），尽可能减少锁竞争，让事务清理阶段更快。</li>
+</ol>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[LOCK: Table A] 
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    |
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    +-- procLocks (链表) --&gt; [PROCLOCK: Proc 1 &amp; Table A] --&gt; [PROCLOCK: Proc 2 &amp; Table A] --&gt; ...
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    |                             |                               |
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    |                             v                               v
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    |                        (指向 Proc 1)                     (指向 Proc 2)
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    |
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    +-- waitProcs (队列) --&gt; [PGPROC: Proc 2] (如果在睡)
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>[PGPROC: Current Backend]
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    |
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    +-- myProcLocks[0] --&gt; [PROCLOCK: Me &amp; Lock X] --&gt; [PROCLOCK: Me &amp; Lock Y]
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    |                           |                          |
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    |                           v                          v
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    |                      (指向 LOCK X)              (指向 LOCK Y)
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    |
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    +-- myProcLocks[1] --&gt; [PROCLOCK: Me &amp; Lock Z]
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    |                           |
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    |                           v
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    |                      (指向 LOCK Z)
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    ...
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    +-- myProcLocks[N] --&gt; (空)
+</span></code></pre></div>
+<h3 id="_4">保存位置<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="cm">/*</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="cm"> * Pointers to hash tables containing lock state</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="cm"> *</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="cm"> * The LockMethodLockHash and LockMethodProcLockHash hash tables are in</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="cm"> * shared memory; LockMethodLocalHash is local to each backend.</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="cm"> */</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">static</span><span class="w"> </span><span class="n">HTAB</span><span class="w"> </span><span class="o">*</span><span class="n">LockMethodLockHash</span><span class="p">;</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="k">static</span><span class="w"> </span><span class="n">HTAB</span><span class="w"> </span><span class="o">*</span><span class="n">LockMethodProcLockHash</span><span class="p">;</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="k">static</span><span class="w"> </span><span class="n">HTAB</span><span class="w"> </span><span class="o">*</span><span class="n">LockMethodLocalHash</span><span class="p">;</span>
+</span></code></pre></div>
+<p><a href="../assets/draw_proclock/">draw_proclock</a></p>
+<h2 id="_5">锁管理器内部锁定机制<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<p>在 PostgreSQL 8.2 之前，锁管理器使用的所有共享内存数据结构都由<strong>单个</strong>轻量级锁（LWLock）—— <code>LockMgrLock</code> 进行保护；任何涉及这些数据结构的操作都必须独占性地锁定 <code>LockMgrLock</code>。不出所料，这成为了一个竞争瓶颈。</p>
+<p>为了减少竞争，锁管理器的数据结构已被拆分为多个"<strong>分区 (partitions)</strong>"，每个分区由一个独立的 LWLock 保护。大多数操作只需要锁定它们正在操作的那个单一分区即可。具体细节如下：</p>
+<ul>
+<li>
+<p><strong>锁的分区分配</strong>：每个可能的锁根据其 <code>LOCKTAG</code> 值的哈希结果被分配到一个特定的分区。该分区的 LWLock 被认为保护了该分区内的所有 <code>LOCK</code> 对象及其附属的 <code>PROCLOCK</code> 对象。</p>
+</li>
+<li>
+<p><strong>哈希表的分区组织</strong>：</p>
+</li>
+<li>用于 <code>LOCK</code> 和 <code>PROCLOCK</code> 的共享内存哈希表经过组织，使得不同的分区使用不同的哈希链。因此，操作不同分区中的对象时不会产生冲突。</li>
+<li>对于 <code>LOCK</code> 表，这直接由 <code>dynahash.c</code> 的“分区表”机制支持：我们只需确保分区号取自 <code>LOCKTAG</code> 的 <code>dynahash</code> 哈希值的<strong>低位比特</strong>。</li>
+<li>
+<p>为了让这对 <code>PROCLOCK</code> 也生效，我们必须确保 <code>PROCLOCK</code> 的哈希值与其关联的 <code>LOCK</code> 具有相同的<strong>低位比特</strong>。这需要专门的哈希函数（参见 <code>proclock_hash</code>）。</p>
+</li>
+<li>
+<p><strong>PGPROC 列表的分区化</strong>：</p>
+</li>
+<li>以前，每个 <code>PGPROC</code>（进程结构）只有一个属于它的 <code>PROCLOCK</code> 列表。</li>
+<li>现在，这已被拆分为<strong>每个分区一个列表</strong>。这样，访问特定的 <code>PROCLOCK</code> 列表就可以由相关联分区的 LWLock 来保护。</li>
+<li>
+<p>（这条规则允许一个后端进程操作另一个后端进程的 <code>PROCLOCK</code> 列表。这在最初并非必要，但现在为了配合“快速路径锁定 (fast-path locking)"已成为必需；详见下文。）</p>
+</li>
+<li>
+<p><strong>PGPROC 其他字段的保护</strong>：<code>PGPROC</code> 中其他与锁相关的字段仅在该 <code>PGPROC</code> 等待锁时才相关，因此我们认为它们由<strong>所等待锁所在分区</strong>的 LWLock 保护。</p>
+</li>
+</ul>
+<h3 id="_6">处理锁请求函数签名<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cm">/*</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="cm"> * Find or create LOCK and PROCLOCK objects as needed for a new lock</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="cm"> * request.</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="cm"> *</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="cm"> * Returns the PROCLOCK object, or NULL if we failed to create the objects</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="cm"> * for lack of shared memory.</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="cm"> *</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="cm"> * The appropriate partition lock must be held at entry, and will be</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="cm"> * held at exit.</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="cm"> */</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="k">static</span><span class="w"> </span><span class="n">PROCLOCK</span><span class="w"> </span><span class="o">*</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="nf">SetupLockInTable</span><span class="p">(</span><span class="n">LockMethod</span><span class="w"> </span><span class="n">lockMethodTable</span><span class="p">,</span><span class="w"> </span><span class="n">PGPROC</span><span class="w"> </span><span class="o">*</span><span class="n">proc</span><span class="p">,</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">                 </span><span class="k">const</span><span class="w"> </span><span class="n">LOCKTAG</span><span class="w"> </span><span class="o">*</span><span class="n">locktag</span><span class="p">,</span><span class="w"> </span><span class="n">uint32</span><span class="w"> </span><span class="n">hashcode</span><span class="p">,</span><span class="w"> </span><span class="n">LOCKMODE</span><span class="w"> </span><span class="n">lockmode</span><span class="p">);</span>
+</span></code></pre></div>
+<p><strong>关于正常操作与死锁检测：</strong></p>
+<ul>
+<li><strong>正常的锁获取与释放</strong>：只需锁定包含目标锁的那个分区就足够了。</li>
+<li><strong>死锁检测</strong>：通常需要接触多个分区。为了简化实现，我们让其按<strong>分区编号顺序</strong>锁定所有分区。</li>
+<li><strong>防止 LWLock 死锁的规则</strong>：任何需要同时锁定多个分区的后端进程，<strong>必须</strong>按分区编号升序依次锁定它们。</li>
+<li>虽然在典型情况下，死锁检测可能无需触碰每一个分区就能完成，但在一个运行正常的系统中，死锁检测不应频繁到成为性能关键点的程度。因此，试图优化这一点似乎并不是高效利用开发精力的做法。</li>
+</ul>
+<p><strong>关于 LOCALLOCK：</strong></p>
+<ul>
+<li>后端的内部 <code>LOCALLOCK</code> 哈希表<strong>没有</strong>进行分区。</li>
+<li>我们在 <code>LOCALLOCK</code> 表条目中存储了锁标签（locktag）哈希码的副本，从中可以计算出分区号。</li>
+<li>这是一种典型的<strong>空间换时间 (speed-for-space)</strong> 的权衡：我们也可以选择在需要时从 <code>LOCKTAG</code> 重新计算分区号，但存储副本可以避免重复计算，提升速度。</li>
+</ul>
+<h2 id="fast-path-locking">快速路径锁定 (Fast Path Locking)<a class="headerlink" href="#fast-path-locking" title="Permanent link">&para;</a></h2>
+<p>快速路径锁定是一种专用机制，旨在降低获取和释放某些特定类型锁的开销。这些锁的特点是：<strong>被频繁地获取和释放，但极少发生冲突</strong>。目前，该机制主要涵盖两类锁：</p>
+<ol>
+<li>
+<p><strong>弱关系锁 (Weak relation locks)</strong>：</p>
+<ul>
+<li><code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code> 和 <code>DELETE</code> 操作必须获取它们所操作的每个关系（表）以及各种内部使用的系统目录的锁。</li>
+<li>许多 DML 操作可以针对同一张表并行执行；只有 DDL 操作（如 <code>CLUSTER</code>、<code>ALTER TABLE</code> 或 <code>DROP</code>）或用户的显式操作（如 <code>LOCK TABLE</code>）才会与 DML 操作获取的“弱”锁（即 <code>AccessShareLock</code>、<code>RowShareLock</code>、<code>RowExclusiveLock</code>）产生冲突。</li>
+</ul>
+</li>
+<li>
+<p><strong>VXID 锁 (虚拟事务 ID 锁)</strong>：</p>
+<ul>
+<li>每个事务都会获取其自身虚拟事务 ID (VXID) 的锁。</li>
+<li>目前，只有 <code>CREATE INDEX CONCURRENTLY</code> 和热备 (Hot Standby，在发生冲突时) 等操作会等待这些锁。因此，大多数 VXID 锁由其所有者获取和释放，无需其他进程关心。</li>
+</ul>
+</li>
+</ol>
+<p><strong>主要问题：</strong>
+主要的锁机制无法很好地应对这种工作负载。即使锁管理器的锁已经进行了分区，任何给定关系的锁标签 (locktag) 仍然只落在<strong>一个且唯一一个</strong>分区中。因此，如果许多短查询同时访问同一个关系，该分区的锁管理器分区锁就会成为竞争瓶颈。这种效应在双核服务器上就已经可测量，并且随着核心数量的增加而变得非常显著。</p>
+<p><strong>解决方案：</strong>
+为了缓解这一瓶颈，从 PostgreSQL 9.2 开始，允许每个后端进程在其 <code>PGPROC</code> 结构内的一个数组中记录有限数量的<strong>非共享关系</strong>上的锁，而不是使用主锁表。</p>
+<ul>
+<li><strong>使用条件</strong>：仅当加锁者能够验证在获取锁的时刻<strong>不存在任何冲突锁</strong>时，才能使用此机制。</li>
+</ul>
+<p><strong>核心算法逻辑：</strong>
+该算法的关键点在于：必须能够在<strong>不争抢共享 LWLock 或自旋锁</strong>的情况下，验证是否存在潜在的冲突锁。否则，这只是将竞争瓶颈从一个地方转移到了另一个地方，毫无意义。</p>
+<p>我们如何实现这一点？</p>
+<ul>
+<li>我们使用了一个包含 <strong>1024 个整数计数器</strong>的数组 (<code>FastPathStrongRelationLocks</code>)。这实际上是将锁空间进行了 <strong>1024 路分区</strong>。</li>
+<li>每个计数器记录了落入该分区的非共享关系上的"<strong>强</strong>"锁（即 <code>ShareLock</code>、<code>ShareRowExclusiveLock</code>、<code>ExclusiveLock</code> 和 <code>AccessExclusiveLock</code>）的数量。</li>
+<li><strong>规则</strong>：当某个计数器<strong>非零</strong>时，禁止在该分区内使用快速路径机制来获取新的关系锁。</li>
+<li><strong>强锁获取流程</strong>：</li>
+<li>想要获取强锁的进程首先将该计数器加 1 ("bump the counter")。</li>
+<li>然后扫描<strong>每个后端进程</strong>的快速路径数组，查找匹配的快速路径锁。</li>
+<li>如果发现任何匹配项，必须在尝试获取锁之前，将这些锁<strong>转移 (transfer)</strong> 到主锁表中。这是为了确保正确的锁冲突检测和死锁检测。</li>
+</ul>
+<p><strong>内存同步 (SMP 系统)：</strong>
+在多处理器 (SMP) 系统上，我们必须保证适当的内存同步。这里我们依赖一个事实：<strong>LWLock 的获取充当了内存序列点 (memory sequence point)</strong>。</p>
+<ul>
+<li><strong>原理</strong>：如果进程 A 执行了存储操作，随后进程 A 和 B 以任意顺序获取了同一个 LWLock，接着进程 B 对同一内存位置执行加载操作，那么 B 保证能看到 A 的存储结果。</li>
+<li><strong>应用</strong>：</li>
+<li>每个后端的快速路径锁队列都由一个 LWLock 保护。</li>
+<li><strong>想获取快速路径锁的后端</strong>：在检查 <code>FastPathStrongRelationLocks</code> 以确认是否存在冲突的强锁之前，必须先获取这个 LWLock。</li>
+<li><strong>想获取强锁的后端</strong>：由于它必须将所有通过快速路径获取的匹配弱锁转移到共享锁表，因此它将依次获取<strong>每一个</strong>保护后端快速路径队列的 LWLock。</li>
+<li><strong>结论</strong>：如果我们检查 <code>FastPathStrongRelationLocks</code> 发现值为 0，那么要么该值确实为 0；要么它是一个过时的值，但在这种情况下，获取强锁的进程尚未获取到我们当前持有的那个后端 LWLock（甚至可能是第一个后端 LWLock）。一旦它获取到该锁，它就会注意到我们刚刚获取的任何弱锁。</li>
+</ul>
+<p><strong>关于 VXID 锁的特殊处理：</strong></p>
+<ul>
+<li>快速路径 VXID 锁<strong>不使用</strong> <code>FastPathStrongRelationLocks</code> 表。</li>
+<li>VXID 上的第一个锁始终是其所有者获取的 <code>ExclusiveLock</code>。</li>
+<li>任何后续的加锁者都是等待 VXID 结束的共享锁持有者。</li>
+<li>事实上，VXID 锁之所以使用锁管理器（而不是通过其他方式等待 VXID 结束），唯一的原因是为了<strong>死锁检测</strong>。</li>
+<li>因此，初始的 VXID 锁<strong>总是</strong>可以通过快速路径获取，<strong>无需检查冲突</strong>。</li>
+<li>任何后续的加锁者必须检查该锁是否已被转移到主锁表；如果没有，则执行转移操作。</li>
+<li>拥有 VXID 的后端必须在事务结束时小心清理主锁表中的任何条目。</li>
+</ul>
+<p><strong>死锁检测：</strong>
+死锁检测<strong>不需要</strong>检查快速路径数据结构，因为任何可能卷入死锁的锁，在此之前都必然已经被转移到了主表中。</p>
+<h2 id="the-deadlock-detection-algorithm">The Deadlock Detection Algorithm<a class="headerlink" href="#the-deadlock-detection-algorithm" title="Permanent link">&para;</a></h2>
+<h2 id="miscellaneous-notes">Miscellaneous Notes<a class="headerlink" href="#miscellaneous-notes" title="Permanent link">&para;</a></h2>
+<h2 id="group-locking">Group Locking<a class="headerlink" href="#group-locking" title="Permanent link">&para;</a></h2>
+<h2 id="user-locks-advisory-locks">User Locks (Advisory Locks)<a class="headerlink" href="#user-locks-advisory-locks" title="Permanent link">&para;</a></h2>
+<h2 id="locking-during-hot-standby">Locking during Hot Standby<a class="headerlink" href="#locking-during-hot-standby" title="Permanent link">&para;</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
