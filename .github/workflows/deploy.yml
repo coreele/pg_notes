@@ -1,36 +1,40 @@
-name: Deploy MkDocs to GitHub Pages
+name: Deploy MkDocs
 
 on:
   push:
     branches:
-      - main  # 或者你的主分支名，如 master
+      - main  # 如果你是 master 就改成 master
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: 3.x
 
       - name: Install dependencies
         run: |
+          pip install mkdocs
           pip install mkdocs-material
-          # 如果有其他插件或依赖，在此安装，例如：
-          # pip install -r requirements.txt
 
       - name: Build site
         run: mkdocs build
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
+          path: ./site
+
+      - name: Deploy
+        uses: actions/deploy-pages@v4
