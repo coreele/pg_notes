@@ -1,68 +1,35 @@
-# Read Me
+# Overview
 
-## 介绍
-
-这是一个关于 **PostgreSQL 数据库源代码** 的深入学习笔记项目。通过系统化的文档和代码分析，记录和分享 PostgreSQL 内部工作原理。
-
-## 📚 内容结构
-
-### 核心模块文档
-
-- **[boot.md](Begin/boot.md)** - PostgreSQL 启动过程分析
-- **[acrh.md](Begin/acrh.md)** - 架构设计与核心组件
-- **[compile.md](Begin/compile.md)** - 编译与构建过程
-- **[memory.md](Utils/mmgr_0_overview.md)** - 内存管理机制
-- **[storage.md](Storage/storage.md)** - 存储管理概览
-- **[code_dir.md](Begin/code_dir.md)** - 源代码目录结构
-
-### 专题目录
-
-- **QueryProcess/** - 查询处理流程
-- **Storage/** - 存储子系统详解
-- **Transaction/** - 事务处理机制
-
-## 🎯 学习重点
-
-本项目涵盖以下 PostgreSQL 核心主题：
-
-1. **架构设计** - 后端进程、通信机制等
-2. **启动和初始化** - PostgreSQL 服务启动的各个阶段
-3. **查询处理** - SQL 查询的解析、规划和执行
-4. **事务管理** - ACID 特性的实现原理
-5. **存储引擎** - 数据如何存储和检索
-6. **内存管理** - 缓冲池、内存上下文的设计
-
-## 📖 快速开始
-
-### 推荐阅读顺序
-
-0. 从 [compile](Begin/compile.md) 编译调试源码
-1. 从 [code_dir.md](Begin/code_dir.md) 了解源代码目录结构
-2. 阅读 [boot.md](Begin/boot.md) 理解启动过程
-3. 查看 [acrh.md](Begin/acrh.md) 学习整体架构
-4. 深入各专题目录（QueryProcess、Transaction、Storage）
-
-### 环境要求
-
-- PostgreSQL 源代码
-- Linux/Unix 开发环境
-- 文本编辑器或 IDE
-
-## 🔗 相关资源
-
-- [PostgreSQL 官方文档](https://www.postgresql.org/docs/)
-- [PostgreSQL 源代码仓库](https://github.com/postgres/postgres)
-- [interdb](https://www.interdb.jp/pg/index.html)
-- [postgres-internals](https://postgres-internals.cn/docs/chapter01/)
-- [deepwiki.com](https://deepwiki.com/postgres/postgres/1-overview)
-
-
-## 💡 使用建议
-
-- 这些笔记最适合与 PostgreSQL 源代码一起阅读
-- 建议搭配断点调试，更深入理解代码执行流程
-- 欢迎提出建议和贡献改进
+PostgreSQL 内部机制学习笔记。侧重底层实现原理，配合源码调试记录。
 
 ---
 
-**维护者**: [Jason](https://github.com/coreele)
+## 📚 基础篇
+
+- [整体架构](Begin/acrh.md) - 进程模型、共享内存与 IPC 通信
+- [编译与调试](Begin/compile.md) - 环境搭建与 LLDB/GDB 调试技巧
+- [目录结构](Begin/code_dir.md) - 源码树概览与核心模块定位
+- [启动流程](Begin/boot.md) - Postmaster 到 Backend 进程的生命周期
+
+## ⚙️ 核心机制
+
+- [查询执行](QueryProcess/0_Overview.md) - Parser, Planner, Executor 全流程解析
+- [存储引擎](Storage/page.md) - Buffer Pool、Heap Table 与页面布局
+- [内存管理](Utils/mmgr_0_overview.md) - MemoryContext 与 AllocSet 实现细节
+- [事务系统](Transaction/trans.md) - MVCC、XID 分配与 WAL 日志机制
+
+## 🛠 阅读建议
+
+1. **run**：参考 [编译文档](Begin/compile.md) 本地构建 PG，学会 attach 进程调试。
+2. **code**：笔记只是线索，核心逻辑请以 `src/backend` 下的 C 代码为准。
+3. **debug**：建议通过 `gdb` 断点观察关键结构体（如 `ProcessUtility`, `ExecScan`）的运行时状态。
+
+## 🔗 参考资料
+
+- [PostgreSQL Internals (interdb.jp)](https://www.interdb.jp/pg/index.html)
+- [PostgreSQL Source Code](https://github.com/postgres/postgres)
+- [The Internals of PostgreSQL (book)](http://www.interdb.jp/pg/)
+
+---
+
+**Maintainer**: [coreele](https://github.com/coreele/pg_notes)
