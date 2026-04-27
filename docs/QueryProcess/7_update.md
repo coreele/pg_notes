@@ -1,4 +1,4 @@
-# HOT update
+# update
 
 ```sql
 drop table if exists tb;

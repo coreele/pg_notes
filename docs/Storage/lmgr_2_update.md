@@ -1,4 +1,4 @@
-# Locks in update
+# Lock in update
 
 ```sql
 -- psql 1

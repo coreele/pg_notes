@@ -1,4 +1,4 @@
-# MemoryContext & Buffer Manager
+# Memory Duty
 
 PostgreSQL 的内存管理：
 

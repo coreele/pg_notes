@@ -1,4 +1,4 @@
-# ResourceOwner
+# ResourceOwner Overview
 
 ResourceOwner 用于“统一管理**非内存资源**生命周期”的机制，确保资源在事务/执行结束或异常时被正确释放（手动实现 **RAII** ）。
 

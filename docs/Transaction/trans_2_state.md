@@ -1,4 +1,4 @@
-# PG中的事务状态
+# Transaction State
 
 ---
 

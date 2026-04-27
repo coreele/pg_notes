@@ -1,4 +1,10 @@
-# PostgreSQL 架构
+# Architecture
+
+![](assets/architecture.png)
+
+> https://medium.com/@reetesh043/ee5b24b52a30
+
+![](assets/query.png)
 
 ## PG 内核全景:
 
@@ -36,9 +42,3 @@
 - **锁管理器（Lock Manager）**：**重型锁**确保业务逻辑不冲突（如：禁止在插入时删表）
 - **同步原语（LWLocks/Spinlocks）**：**轻量级锁**确保控制面在修改共享状态（如修改事务号、分配内存）时的物理原子性
 - **内存上下文（MemoryContext）**：确保控制面在运行过程中，内存资源的分配和回收是合理的、不泄露的
-
-![](assets/architecture.png)
-
-> https://medium.com/@reetesh043/ee5b24b52a30
-
-![](assets/query.png)

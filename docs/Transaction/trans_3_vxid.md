@@ -1,4 +1,4 @@
-# 深度理解 PostgreSQL 虚拟事务 ID (VXID)
+# Transaction VXID
 
 - 在 PostgreSQL 的事务系统中，**VXID (Virtual Transaction ID)** 是控制面（Control Plane）实现资源解耦与并发性能的核心设计。
 - 相比于落盘的物理事务 ID (XID)，VXID 是一种仅存在于内存中的**轻量级身份标识**。

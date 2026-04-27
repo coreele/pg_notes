@@ -1,4 +1,4 @@
-# lock conflict
+# Lock conflict
 
 ```sql
 begin;

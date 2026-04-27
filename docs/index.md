@@ -16,7 +16,7 @@ PostgreSQL 内部机制学习笔记。侧重底层实现原理，配合源码调
 - [查询执行](QueryProcess/0_Overview.md) - Parser, Planner, Executor 全流程解析
 - [存储引擎](Storage/page.md) - Buffer Pool、Heap Table 与页面布局
 - [内存管理](Utils/mmgr_0_overview.md) - MemoryContext 与 AllocSet 实现细节
-- [事务系统](Transaction/trans.md) - MVCC、XID 分配与 WAL 日志机制
+- [事务系统](Transaction/trans_0_overview.md) - MVCC、XID 分配与 WAL 日志机制
 
 ## 🛠 阅读建议
 

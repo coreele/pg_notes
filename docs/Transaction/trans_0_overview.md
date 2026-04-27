@@ -1,4 +1,4 @@
-# Transaction
+# Transaction Overview
 
 - 隔离性1: https://www.postgresql.org/docs/16/transaction-iso.html
 - 隔离性2: https://postgres-internals.cn/docs/chapter02/
@@ -16,6 +16,7 @@
 | **一致性 (C)** | 它是 A+I+D 的综合结果 + **数据完整性约束**      | 包括 唯一索引、外键、Check 约束等主动校验。              |
 
 ## 隔离级别
+
 | Isolation Level  | Dirty Read             | Nonrepeatable Read | Phantom Read           | Serialization Anomaly |
 | ---------------- | ---------------------- | ------------------ | ---------------------- | --------------------- |
 | Read uncommitted | Allowed, but not in PG | Possible           | Possible               | Possible              |

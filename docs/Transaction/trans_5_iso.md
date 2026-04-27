@@ -1,4 +1,6 @@
-# Repeatable Read and SERIALIZABLE
+# Transaction Isolation
+
+Repeatable Read and SERIALIZABLE
 
 **读已提交**作为大多数数据库的默认隔离级别，已被广泛应用并为开发者所熟知。其可能产生的**不可重复读**和**幻读**等现象也相对容易理解。本文将简要介绍**可重复读**隔离级别下可能出现的写偏斜问题，并进一步概述 PostgreSQL 串行化隔离级别的实现机制。
 

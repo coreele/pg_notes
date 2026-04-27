@@ -1,4 +1,6 @@
-# MVCC, Snapshot, Isolation
+# MVCC Snapshot
+
+MVCC 核心: Snapshot
 
 ## 0. 核心用例设计
 

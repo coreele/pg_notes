@@ -1,4 +1,4 @@
-# PG 事务物理事务id
+# Transaction XID
 
 https://www.interdb.jp/pg/pgsql05/01.html
 
