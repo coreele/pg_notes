@@ -1,4 +1,12 @@
-# Code Dir
+# Code
+
+代码仓库
+
+- pg 官方仓库：https://git.postgresql.org/git/postgresql.git
+- github 仓库：https://github.com/postgres/postgres.git
+- gitee 仓库：https://gitee.com/mirrors/PostgreSQL.git
+
+代码目录
 
 ```text
 .
@@ -33,7 +41,7 @@
 └── utils 存放通用工具模块，如内存分配、错误处理、日期时间处理等辅助功能
 ```
 
-## 核心
+核心目录
 
 ```
 .
@@ -41,6 +49,7 @@
 ├── postmaster 主进程（守护进程）代码，负责监听连接、管理后端进程生命周期
 ├── tcop “查询编译器” 模块，协调客户端 SQL 请求的接收、解析、重写等过程 traffic cop
 ├── parser 负责 SQL 语句的解析，将文本转换为抽象语法树（AST）
+├── catalog 管理系统目录（系统表），维护数据库对象（表、索引等）的元数据
 ├── rewrite 处理规则（Rule）和视图（View），将对视图的查询重写为对基表的查询
 ├── optimizer 查询优化器核心，分析 SQL 查询并生成最优查询计划
 ├── executor SQL 执行器核心，将查询计划转换为实际数据操作，执行查询并返回结果
@@ -48,10 +57,3 @@
 └── storage 实现存储子系统，包含缓冲池、事务日志（WAL）、磁盘文件管理等
 ```
 
-## 二阶段
-
-```text
-.
-├── catalog 管理系统目录（系统表），维护数据库对象（表、索引等）的元数据
-└── commands 实现 SQL 命令执行逻辑，处理 CREATE、ALTER、DROP 等 DDL 及部分 DML 命令
-```

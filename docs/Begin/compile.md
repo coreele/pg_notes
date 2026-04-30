@@ -4,10 +4,9 @@
 
 ## 源码获取
 
-- 官方仓库：https://git.postgresql.org/git/postgresql.git
-- 镜像仓库
-  1. github仓库：https://github.com/postgres/postgres.git
-  2. gitee仓库：https://gitee.com/mirrors/PostgreSQL.git
+- pg 官方仓库：https://git.postgresql.org/git/postgresql.git
+- github 仓库：https://github.com/postgres/postgres.git
+- gitee 仓库：https://gitee.com/mirrors/PostgreSQL.git
 
 ```sh
 git clone https://gitee.com/mirrors/PostgreSQL.git

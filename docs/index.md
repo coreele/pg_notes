@@ -8,7 +8,7 @@ PostgreSQL 内部机制学习笔记。侧重底层实现原理，配合源码调
 
 - [整体架构](Begin/acrh.md) - 进程模型、共享内存与 IPC 通信
 - [编译与调试](Begin/compile.md) - 环境搭建与 LLDB/GDB 调试技巧
-- [目录结构](Begin/code_dir.md) - 源码树概览与核心模块定位
+- [目录结构](Begin/code.md) - 源码树概览与核心模块定位
 - [启动流程](Begin/boot.md) - Postmaster 到 Backend 进程的生命周期
 
 ## ⚙️ 核心机制

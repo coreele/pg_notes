@@ -258,7 +258,7 @@ RangeVarGetRelidExtended
 
 ### 系统表缓存 `SysCache`
 
-![](assets/SysCache%201%201.png)
+![](assets/SysCache.png)
 
 > https://cloud.tencent.com/developer/article/2000765?from_column=20421&from=20421
 
@@ -297,7 +297,7 @@ select x, y, c  from tb as t(x, y) where x < 3;
 
 `buildRelationAliases` 合并用户定义的别名和原列名形成完整的别名结构 `Alias` 保存到 RTE 的 `eref` 字段
 
-![500](assets/aliases.png)
+![500](assets/NamespaceItem.png)
 
 ## 分析列名 `select a, b`
 

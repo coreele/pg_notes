@@ -1,16 +1,35 @@
-
 # Overview
 
 - [A Comprehensive Overview of PostgreSQL Query Processing Stages](https://www.highgo.ca/2024/01/26/a-comprehensive-overview-of-postgresql-query-processing-stages/)
 - [The Internals of PostgreSQL: 3 Query Processing](https://www.interdb.jp/pg/pgsql03/01.html)
+- [postgres.c](https://github.com/postgres/postgres/blob/master/src/backend/tcop/postgres.c)
 
-核心函数 `exec_simple_query`
+## exec_simple_query
 
-![](assets/exec_simple_query.png)
+```c
+/* parse */
+pg_parse_query
+    raw_parser
 
-[postgres.c](https://github.com/postgres/postgres/blob/master/src/backend/tcop/postgres.c)
+/* analyze and rewrite */
+pg_analyze_and_rewrite_fixedparams
+    parse_analyze_fixedparams
+    pg_rewrite_query
 
-## 完整调用过程 `exec_simple_query`
+/* plan */
+pg_plan_queries
+
+/* execute */
+PortalStart
+    ExecutorStart
+PortalRun - PortalRunSelect
+    ExecutorRun
+PortalDrop
+	ExecutorFinish
+    ExecutorEnd
+```
+
+## 完整调用栈
 
 ```cpp
 
