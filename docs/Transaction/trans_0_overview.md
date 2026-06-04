@@ -60,7 +60,7 @@ insert into tb(id, account) values (1, 100);
 
 wal
 
-[draw_wal](assets/draw_wal.md)
+[draw_wal_principle](assets/draw_wal_principle.md)
 
 checkpoint 触发时机
 
