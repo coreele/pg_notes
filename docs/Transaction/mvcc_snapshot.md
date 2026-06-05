@@ -16,7 +16,7 @@ create table accounts(id int, balance int);
 insert into accounts values (1, 500);
 ```
 
-| *TXN A*                         | *TXN B*                                           |
+| _TXN A_                         | _TXN B_                                           |
 | ------------------------------- | ------------------------------------------------- |
 | `begin;`                        | `begin;`                                          |
 |                                 | `update accounts set balance = 200 where id = 1;` |
@@ -25,10 +25,10 @@ insert into accounts values (1, 500);
 | `select * from accounts; --200` |                                                   |
 | `commit;`                       |                                                   |
 
-- 默认隔离级别为 `read committed`，只要 client 2 提交就可以读到最新结果，因此存在不可重复读问题
+- 默认隔离级别为 `read committed`，只要事务B提交就可以读到最新结果，因此存在不可重复读问题
 - 将隔离级别修改为 `repeatable read` 读取结果一致
 
-| *TXN A*                                              | *TXN B*                                           |
+| _TXN A_                                              | _TXN B_                                           |
 | ---------------------------------------------------- | ------------------------------------------------- |
 | `start transaction isolation level repeatable read;` | `begin;`                                          |
 |                                                      | `update accounts set balance = 200 where id = 1;` |
@@ -98,7 +98,7 @@ return CurrentSnapshot;
 ## 5. 核心函数(`GetSnapshotData`)
 
 ```cpp
-/* 
+/*
  * The returned snapshot includes xmin (lowest still-running xact ID),
  * xmax (highest completed xact ID + 1), and a list of running xact IDs
  * in the range xmin <= xid < xmax.  It is used as follows:

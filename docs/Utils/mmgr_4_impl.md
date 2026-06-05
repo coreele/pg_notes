@@ -8,9 +8,9 @@
 
 多态实现:
 
-- `AllocSetContext`, `GenerationContext`, `SlabContext` 是 MemoryContext 的三种实现
-- 其中 MemoryContext 类似抽象类, `palloc` 的核心是调用具体上下文实现的虚函数(虚函数表 MemoryContext::methods)
-- methods 在 MemoryContext 中声明，在 `xxContextCreate` 实例化时赋值为特定上下文的函数指针，从而实现多态
+- `AllocSetContext`, `GenerationContext`, `SlabContext` 是 `MemoryContext` 的三种实现
+- 其中 `MemoryContext` 类似抽象类, `palloc` 的核心是调用具体上下文实现的虚函数(虚函数表 `MemoryContext::methods`)
+- methods 在 `MemoryContext` 中声明，在 `xxContextCreate` 实例化时赋值为特定上下文的函数指针，从而实现多态
 
 ```
 palloc
