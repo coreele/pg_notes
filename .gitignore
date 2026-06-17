@@ -106,3 +106,6 @@ dist/
 *.swp
 *.swo
 _minted-*
+
+# mdbook
+book

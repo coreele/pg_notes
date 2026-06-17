@@ -18,3 +18,6 @@
 - **事务**：Lock Manager, WAL/CLOG, MVCC (Visible check)
 - **元数据**：Syscache(系统表缓存), Relcache(表定义缓存)
 - **运行**：MemoryContext, 信号量/共享内存, 辅助进程
+
+
+`-->`

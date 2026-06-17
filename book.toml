@@ -1,0 +1,7 @@
+[book]
+title = "PG Source Code Note"
+authors = ["Jason"]
+language = "en"
+
+[output.html]
+additional-css = ["theme/custom.css"]

@@ -69,7 +69,7 @@ PostgreSQL 的事务系统是一个三层系统。底层实现低级事务和子
 
 这个例子的重点在于展示 StartTransactionCommand 和 CommitTransactionCommand 需要具备状态感知能力——它们应该在 BeginTransactionBlock 和 EndTransactionBlock 调用之间调用 CommandCounterIncrement，而在这些调用之外则需要执行正常的启动、提交或中止处理。
 
-此外，假设 "SELECT \* FROM foo" 导致了中止条件。在这种情况下会调用 AbortCurrentTransaction，事务被置于中止状态。在此状态下，除了事务终止语句或 ROLLBACK TO <savepoint> 命令外，任何用户输入都将被忽略。
+此外，假设 "SELECT \* FROM foo" 导致了中止条件。在这种情况下会调用 AbortCurrentTransaction，事务被置于中止状态。在此状态下，除了事务终止语句或 `ROLLBACK TO <savepoint>` 命令外，任何用户输入都将被忽略。
 
 事务中止可以通过两种方式发生：
 
@@ -111,7 +111,7 @@ xact.c 中的其余代码是支持创建和完成事务及子事务的例程。�
 
 关于子事务处理的一个重要点是，可能需要响应单个用户命令关闭多个子事务。这是因为保存点有名称，我们允许按名称提交或回滚保存点，而不一定是最后打开的那个。此外，COMMIT 或 ROLLBACK 命令必须能够关闭整个栈。我们通过让实用命令子程序将所有状态栈条目标记为待提交或待中止来处理这个问题，然后当主循环到达 CommitTransactionCommand 时，执行实际工作。这样做的主要优点是，如果在弹出状态栈条目时出现错误，剩余的栈条目仍然显示我们需要做什么来完成收尾工作。
 
-在 ROLLBACK TO <savepoint> 的情况下，我们中止所有直到由保存点名称标识的子事务，然后用相同的名称重新创建该子事务级别。因此，就内部而言，这是一个全新的子事务。
+在 `ROLLBACK TO <savepoint>` 的情况下，我们中止所有直到由保存点名称标识的子事务，然后用相同的名称重新创建该子事务级别。因此，就内部而言，这是一个全新的子事务。
 
 其他子系统允许启动"内部"子事务，由 BeginInternalSubTransaction 处理。这是为了允许实现异常处理，例如在 PL/pgSQL 中。ReleaseCurrentSubTransaction 和 RollbackAndReleaseCurrentSubTransaction 允许子系统关闭所述子事务。这与保存点/释放路径的主要区别在于，我们在每个子程序中立即执行完整的状态转换，而不是将一些工作推迟到 CommitTransactionCommand。另一个区别是，当没有建立显式事务块时，允许 BeginInternalSubTransaction，而 DefineSavepoint 则不允许。
 

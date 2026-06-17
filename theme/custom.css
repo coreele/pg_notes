@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap');
+
+#content {
+    max-width: none !important;
+}
+
+main {
+    max-width: 1400px !important;
+}
+
+pre {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+}
+
+.content img {
+    max-width: min(100%, 800px); /* 取两者较小值 */
+    height: auto;
+}
+
+:root {
+    /* ✅ 必须定义这两个变量，否则 var() 会失效 */
+    --text-font-family: "Fira Sans", sans-serif;
+    --mono-font-family: "Fira Code", monospace;
+}
+
+/* 应用正文字体 */
+body, .content {
+    font-family: var(--text-font-family) !important;
+}
+
+/* 应用代码字体 + 连字 */
+code, pre, code span {
+    font-family: var(--mono-font-family) !important;
+    font-variant-ligatures: common-ligatures contextual;
+}
