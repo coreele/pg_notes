@@ -2,7 +2,7 @@
 
 1. 相关函数: `pg_parse_query`
 
-2. 核心结构
+1. 核心结构
 
 `RawStmt`: container for any one statement's raw parse tree
 
@@ -118,7 +118,3 @@ select from tb;
 ```
 
 涉及的其他子句：`from_clause`, `opt_target_list`, `where_clause`, ...
-
-
-
-

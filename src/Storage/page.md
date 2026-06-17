@@ -16,7 +16,7 @@ insert into tb values (1), (2), (3);
 
 - PostgreSQL 提供的一个内省扩展模块
 - 允许用户通过 SQL 界面直接观察磁盘数据页（Page）的原始二进制内容及元数据结构
-- 代码位于 `postgres/contrib/pageinspect/`，编译后使用 
+- 代码位于 `postgres/contrib/pageinspect/`，编译后使用
 
 ```sh
 # 1. 自动获取PG服务端头文件目录（模糊化安装路径） 
@@ -38,16 +38,18 @@ create extension pageinspect;
 常用函数说明：
 
 - `get_raw_page`: 从磁盘读取原始 8KB 数据块
+
 - `page_header`: 查看 LSN、lower、upper 等页头元数据
+
 - `heap_page_items`: 解析行指针和元组头（xmin, xmax）
 
 - `bt_page_items`: 查看索引记录及其指向的元组地址
+
 - `heap_page_item_attrs`: 解码字段内容
 
 ## page
 
 ![disk page organization](assets/page_table_file.png)
-
 
 查询页头信息
 

@@ -11,13 +11,13 @@ TopMemoryContext (后端生命周期)
 └── TopTransactionContext  存放生命周期和顶层事务一致的数据
 ```
 
-| 上下文名称                | 内部数据有效生命周期 | 重置触发时机            |
+| 上下文名称 | 内部数据有效生命周期 | 重置触发时机 |
 | ------------------------- | -------------------- | ----------------------- |
-| **ErrorContext**          | **错误处理期间**     | 错误处理完后手动重置    |
-| **CacheMemoryContext**    | **会话级/缓存失效**  | 显式失效或内存压力      |
-| **MessageContext**        | **消息级** (几毫秒)  | 每条新消息到来前        |
+| **ErrorContext** | **错误处理期间** | 错误处理完后手动重置 |
+| **CacheMemoryContext** | **会话级/缓存失效** | 显式失效或内存压力 |
+| **MessageContext** | **消息级** (几毫秒) | 每条新消息到来前 |
 | **TopTransactionContext** | **事务级** (几秒/分) | 事务 Commit/Rollback 后 |
-| **TopPortalContext**      | **语句/游标级**      | 查询结束或 Cursor Close |
+| **TopPortalContext** | **语句/游标级** | 查询结束或 Cursor Close |
 
 > `PostmasterContext` 仅存在于 Postmaster 主守护进程中，普通后端进程 (Backend) 无此上下文。
 

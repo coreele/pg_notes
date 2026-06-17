@@ -40,15 +40,15 @@ MemoryContextReset
 
 ## 类比文件系统
 
-| **MemoryContext 概念**    | **文件系统类比**  | **说明**                     |
+| **MemoryContext 概念** | **文件系统类比** | **说明** |
 | ------------------------- | ----------------- | ---------------------------- |
-| `MemoryContext`           | 目录 (Directory)  | 内存对象的容器               |
-| `TopMemoryContext`        | 根目录 `/`        | 永远存在，所有目录的父节点   |
-| `palloc()`                | `touch file`      | 在当前目录下创建文件         |
-| `CurrentMemoryContext`    | `pwd`             | 新文件默认创建在这里         |
-| `MemoryContextSwitchTo()` | `cd /path/to/dir` | 切换当前工作目录             |
-| `MemoryContextDelete()`   | `rm -rf dir`      | 删除目录及旗下所有文件       |
-| `MemoryContextReset()`    | `rm -rf dir/*`    | 清空内容，目录留着下次复用   |
-| `MemoryContextSetParent`  | `mv`              | 移动到其他上下文             |
-| 子上下文                  | 子目录            | 父目录删除时，子目录自动被删 |
-| 内存泄漏                  | 忘记删临时目录    | 文件残留，占用磁盘空间       |
+| `MemoryContext` | 目录 (Directory) | 内存对象的容器 |
+| `TopMemoryContext` | 根目录 `/` | 永远存在，所有目录的父节点 |
+| `palloc()` | `touch file` | 在当前目录下创建文件 |
+| `CurrentMemoryContext` | `pwd` | 新文件默认创建在这里 |
+| `MemoryContextSwitchTo()` | `cd /path/to/dir` | 切换当前工作目录 |
+| `MemoryContextDelete()` | `rm -rf dir` | 删除目录及旗下所有文件 |
+| `MemoryContextReset()` | `rm -rf dir/*` | 清空内容，目录留着下次复用 |
+| `MemoryContextSetParent` | `mv` | 移动到其他上下文 |
+| 子上下文 | 子目录 | 父目录删除时，子目录自动被删 |
+| 内存泄漏 | 忘记删临时目录 | 文件残留，占用磁盘空间 |

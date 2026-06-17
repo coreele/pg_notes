@@ -70,13 +70,14 @@ The ring buffer is a small, **temporary** buffer area. It is allocated in shared
 
 1. Bulk-reading: When scanning a relation whose size exceeds one-quarter of the buffer pool size (shared_buffers/4). In this case, the ring buffer size is 256 KB.
 
-2. Bulk-writing: When executing the following SQL commands, the ring buffer size is 16 MB:
+1. Bulk-writing: When executing the following SQL commands, the ring buffer size is 16 MB:
+
    - [COPY FROM](http://www.postgresql.org/docs/current/static/sql-copy.html) command.
    - [CREATE TABLE AS](http://www.postgresql.org/docs/current/static/sql-createtableas.html) command.
    - [CREATE MATERIALIZED VIEW](http://www.postgresql.org/docs/current/static/sql-creatematerializedview.html) or [REFRESH MATERIALIZED VIEW](http://www.postgresql.org/docs/current/static/sql-refreshmaterializedview.html) command.
    - [ALTER TABLE](http://www.postgresql.org/docs/current/static/sql-altertable.html) command.
 
-3. Vacuum-processing:
+1. Vacuum-processing:
    When an autovacuum process performs vacuuming. In this case, the ring buffer size is 256 KB.
 
 ### `Local Buffer`

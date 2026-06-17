@@ -5,9 +5,10 @@
 - 调试语句：`insert into tb values(1)`
 
 - insert 核心流程梳理，将从最简单的插入数据开始，逐步讨论事务、锁、资源管理等相关内容
+
 - 调试语句：`insert into tb values(1)`
 
-## `exec_simple_query` 流程概览
+## 概览
 
 ```cpp
 start_xact_command
@@ -20,7 +21,7 @@ EndCommand
 finish_xact_command
 ```
 
-## `exec_simple_query` 流程详解-插入数据
+## `ProcessQuery`
 
 ```cpp
 /* ... */
@@ -50,7 +51,7 @@ EndCommand
 finish_xact_command
 ```
 
-## `exec_simple_query` 流程详解-提交事务
+## `CommitTransaction`
 
 ```cpp
 start_xact_command
@@ -79,8 +80,7 @@ finish_xact_command
     xact_started = false;
 ```
 
-
-## `exec_simple_query` 流程详解-完整过程
+## 完整过程
 
 ```cpp
 start_xact_command
@@ -132,8 +132,7 @@ finish_xact_command
     xact_started = false;
 ```
 
-
-## insert 的延迟状态更新
+## Hint Bits
 
 依赖扩展: `pageinspector`: 用于直接查看页面和元组信息
 

@@ -134,11 +134,11 @@ exec_simple_query
 
 ## 核心技术
 
-| 步骤     | 涉及技术（控制面/运行面）     | 涉及技术（数据面）             | 目的               |
+| 步骤 | 涉及技术（控制面/运行面） | 涉及技术（数据面） | 目的 |
 | -------- | ----------------------------- | ------------------------------ | ------------------ |
-| `BEGIN`  | Transaction State, VirtualXID | -                              | 环境准备           |
-| `INSERT` | Lock Manager, Syscache, XID   | Shared Buffer, FSM, WAL Buffer | 逻辑执行与物理写入 |
-| `COMMIT` | CLOG, MVCC                    | Disk (WAL File)                | 状态确认与持久化   |
+| `BEGIN` | Transaction State, VirtualXID | - | 环境准备 |
+| `INSERT` | Lock Manager, Syscache, XID | Shared Buffer, FSM, WAL Buffer | 逻辑执行与物理写入 |
+| `COMMIT` | CLOG, MVCC | Disk (WAL File) | 状态确认与持久化 |
 
 作用
 

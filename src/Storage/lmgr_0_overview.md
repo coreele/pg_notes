@@ -44,16 +44,16 @@ update tb set a = 2; -- blocked
 
 3. conflict matrix
 
-|                      | `ACCESS SHARE` | `ROW SHARE` | `ROW EXCL.` | `SHARE UPDATE EXCL.` | `SHARE` | `SHARE ROW EXCL.` | `EXCL.` | `ACCESS EXCL.` |
+| | `ACCESS SHARE` | `ROW SHARE` | `ROW EXCL.` | `SHARE UPDATE EXCL.` | `SHARE` | `SHARE ROW EXCL.` | `EXCL.` | `ACCESS EXCL.` |
 | -------------------- | :------------: | :---------: | :---------: | :------------------: | :-----: | :---------------: | :-----: | :------------: |
-| `ACCESS SHARE`       |                |             |             |                      |         |                   |         |       X        |
-| `ROW SHARE`          |                |             |             |                      |         |                   |    X    |       X        |
-| `ROW EXCL.`          |                |             |             |                      |    X    |         X         |    X    |       X        |
-| `SHARE UPDATE EXCL.` |                |             |             |          X           |    X    |         X         |    X    |       X        |
-| `SHARE`              |                |             |      X      |          X           |         |         X         |    X    |       X        |
-| `SHARE ROW EXCL.`    |                |             |      X      |          X           |    X    |         X         |    X    |       X        |
-| `EXCL.`              |                |      X      |      X      |          X           |    X    |         X         |    X    |       X        |
-| `ACCESS EXCL.`       |       X        |      X      |      X      |          X           |    X    |         X         |    X    |       X        |
+| `ACCESS SHARE` | | | | | | | | X |
+| `ROW SHARE` | | | | | | | X | X |
+| `ROW EXCL.` | | | | | X | X | X | X |
+| `SHARE UPDATE EXCL.` | | | | X | X | X | X | X |
+| `SHARE` | | | X | X | | X | X | X |
+| `SHARE ROW EXCL.` | | | X | X | X | X | X | X |
+| `EXCL.` | | X | X | X | X | X | X | X |
+| `ACCESS EXCL.` | X | X | X | X | X | X | X | X |
 
 ![](assets/lock_conflict_matrix.png)
 

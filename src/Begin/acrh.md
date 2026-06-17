@@ -6,10 +6,9 @@
 
 > https://medium.com/@reetesh043/ee5b24b52a30
 
-
 ![](assets/arch_02.png)
-> https://www.interdb.jp/pg/pgsql02/01.html
 
+> https://www.interdb.jp/pg/pgsql02/01.html
 
 ## PG 内核全景
 
@@ -18,6 +17,3 @@
 - **事务**：Lock Manager, WAL/CLOG, MVCC (Visible check)
 - **元数据**：Syscache(系统表缓存), Relcache(表定义缓存)
 - **运行**：MemoryContext, 信号量/共享内存, 辅助进程
-
-
-`-->`

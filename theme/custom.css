@@ -12,10 +12,6 @@ pre {
     overflow-x: auto;
 }
 
-table {
-    width: 100%;
-}
-
 .content img {
     max-width: min(100%, 800px); /* 取两者较小值 */
     height: auto;
@@ -36,4 +32,33 @@ body, .content {
 code, pre, code span {
     font-family: var(--mono-font-family) !important;
     font-variant-ligatures: common-ligatures contextual;
+}
+
+
+.content table {
+    width: auto;
+    min-width: 100%;
+    max-width: 100%;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+/* 取消斑马纹 */
+.content table tbody tr:nth-child(odd),
+.content table tbody tr:nth-child(even) {
+    background: transparent !important;
+}
+
+/* 行悬浮高亮不受影响 */
+.light .content table tbody tr:hover {
+    background-color: rgba(120, 180, 255, 0.22) !important;
+}
+.coal .content table tbody tr:hover {
+    background-color: rgba(100, 160, 240, 0.25) !important;
+}
+
+/* 表头不悬浮变色 */
+.content table thead tr:hover {
+    background: inherit !important;
 }

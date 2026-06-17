@@ -2,9 +2,9 @@
 
 ResourceOwner 用于“统一管理**非内存资源**生命周期”的机制，确保资源在事务/执行结束或异常时被正确释放（手动实现 **RAII** ）。
 
-* 资源分散在各模块（buffer / lock / snapshot / file …）
-* 执行中可能随时中断
-* 需要统一兜底释放
+- 资源分散在各模块（buffer / lock / snapshot / file …）
+- 执行中可能随时中断
+- 需要统一兜底释放
 
 ## 核心设计
 
@@ -66,7 +66,6 @@ ResourceOwnerDelete
 ResourceOwnerRemember_____
 ResourceOwnerForget_____
 ```
-
 
 ```sql
 BEGIN;

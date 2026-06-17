@@ -6,29 +6,35 @@ PostgreSQL 的事务系统是一个三层系统。底层实现低级事务和子
 
 中间层代码在 postgres.c 中被调用，在每个查询处理前后，或在检测到错误后调用：
 
-    	StartTransactionCommand
-    	CommitTransactionCommand
-    	AbortCurrentTransaction
+```
+	StartTransactionCommand
+	CommitTransactionCommand
+	AbortCurrentTransaction
+```
 
 同时，用户可以通过发出 SQL 命令 BEGIN、COMMIT、ROLLBACK、SAVEPOINT、ROLLBACK TO 或 RELEASE 来改变系统状态。流量控制器将这些调用重定向到顶层例程：
 
-    	BeginTransactionBlock
-    	EndTransactionBlock
-    	UserAbortTransactionBlock
-    	DefineSavepoint
-    	RollbackToSavepoint
-    	ReleaseSavepoint
+```
+	BeginTransactionBlock
+	EndTransactionBlock
+	UserAbortTransactionBlock
+	DefineSavepoint
+	RollbackToSavepoint
+	ReleaseSavepoint
+```
 
 根据系统的当前状态，这些函数调用低级函数来激活真正的事务系统：
 
-    	StartTransaction
-    	CommitTransaction
-    	AbortTransaction
-    	CleanupTransaction
-    	StartSubTransaction
-    	CommitSubTransaction
-    	AbortSubTransaction
-    	CleanupSubTransaction
+```
+	StartTransaction
+	CommitTransaction
+	AbortTransaction
+	CleanupTransaction
+	StartSubTransaction
+	CommitSubTransaction
+	AbortSubTransaction
+	CleanupSubTransaction
+```
 
 此外，在事务内部，CommandCounterIncrement 被调用来递增命令计数器，这使得后续命令能够"看到"同一事务中先前命令的效果。注意，这在事务块内的每个查询之后由 CommitTransactionCommand 自动完成，但某些实用函数也在内部执行此操作，以允许同一实用命令中的后续操作看到某些操作（通常在系统目录中）的效果。（例如，在 DefineRelation 中，它在创建堆表之后执行，使 pg_class 行可见，以便能够锁定它。）
 
@@ -69,12 +75,12 @@ PostgreSQL 的事务系统是一个三层系统。底层实现低级事务和子
 
 这个例子的重点在于展示 StartTransactionCommand 和 CommitTransactionCommand 需要具备状态感知能力——它们应该在 BeginTransactionBlock 和 EndTransactionBlock 调用之间调用 CommandCounterIncrement，而在这些调用之外则需要执行正常的启动、提交或中止处理。
 
-此外，假设 "SELECT \* FROM foo" 导致了中止条件。在这种情况下会调用 AbortCurrentTransaction，事务被置于中止状态。在此状态下，除了事务终止语句或 `ROLLBACK TO <savepoint>` 命令外，任何用户输入都将被忽略。
+此外，假设 "SELECT * FROM foo" 导致了中止条件。在这种情况下会调用 AbortCurrentTransaction，事务被置于中止状态。在此状态下，除了事务终止语句或 `ROLLBACK TO <savepoint>` 命令外，任何用户输入都将被忽略。
 
 事务中止可以通过两种方式发生：
 
 1. 系统因某些内部原因而中止（语法错误等）
-2. 用户输入 ROLLBACK
+1. 用户输入 ROLLBACK
 
 我们必须区分它们的原因通过以下两种情况来说明：
 
@@ -173,26 +179,28 @@ WAL 子系统（在代码中也称为 XLOG）的存在是为了保证崩溃恢�
 
 执行 WAL 记录操作的一般模式是：
 
-1.  Pin 并独占锁定包含要修改的数据页面的共享缓冲区。
+1. Pin 并独占锁定包含要修改的数据页面的共享缓冲区。
 
-2.  START_CRIT_SECTION()（接下来三个步骤中的任何错误都必须导致 PANIC，因为共享缓冲区将包含未记录的更改，我们必须确保这些更改不会到达磁盘。显然，在开始临界区之前，您应该检查条件，例如页面上是否有足够的空闲空间。）
+1. START_CRIT_SECTION()（接下来三个步骤中的任何错误都必须导致 PANIC，因为共享缓冲区将包含未记录的更改，我们必须确保这些更改不会到达磁盘。显然，在开始临界区之前，您应该检查条件，例如页面上是否有足够的空闲空间。）
 
-3.  将所需的更改应用于共享缓冲区。
+1. 将所需的更改应用于共享缓冲区。
 
-4.  使用 MarkBufferDirty() 将共享缓冲区标记为脏。（这必须在插入 WAL 记录之前发生；参见 SyncOneBuffer() 中的注释。）注意，只有当您写入 WAL 记录时，才应该使用 MarkBufferDirty() 将缓冲区标记为脏；参见下面的"编写提示"。
+1. 使用 MarkBufferDirty() 将共享缓冲区标记为脏。（这必须在插入 WAL 记录之前发生；参见 SyncOneBuffer() 中的注释。）注意，只有当您写入 WAL 记录时，才应该使用 MarkBufferDirty() 将缓冲区标记为脏；参见下面的"编写提示"。
 
-5.  如果关系需要 WAL 记录，使用 XLogBeginInsert 和 XLogRegister\* 函数构建 WAL 记录，并插入它。（参见下面的"构造 WAL 记录"。）然后使用返回的 XLOG 位置更新页面的 LSN。例如：
+1. 如果关系需要 WAL 记录，使用 XLogBeginInsert 和 XLogRegister\* 函数构建 WAL 记录，并插入它。（参见下面的"构造 WAL 记录"。）然后使用返回的 XLOG 位置更新页面的 LSN。例如：
 
-        XLogBeginInsert();
-        XLogRegisterBuffer(...)
-        XLogRegisterData(...)
-        recptr = XLogInsert(rmgr_id, info);
+   ```
+   XLogBeginInsert();
+   XLogRegisterBuffer(...)
+   XLogRegisterData(...)
+   recptr = XLogInsert(rmgr_id, info);
 
-        PageSetLSN(dp, recptr);
+   PageSetLSN(dp, recptr);
+   ```
 
-6.  END_CRIT_SECTION()
+1. END_CRIT_SECTION()
 
-7.  解锁并取消 Pin 缓冲区。
+1. 解锁并取消 Pin 缓冲区。
 
 复杂更改（如多级索引插入）通常需要由一系列原子操作 WAL 记录来描述。中间状态必须是自洽的，这样如果重放在任何两个操作之间中断，系统仍然是完全功能的。例如，在 btree 索引中，页面分裂需要分配一个新页面，并在父 btree 级别插入一个新键，但由于锁定原因，这必须由两个单独的 WAL 记录反映。重放第一个记录（分配新页面并将元组移动到它）会在页面上设置一个标志，指示键尚未插入到父级。重放第二个记录会清除该标志。这个中间状态在正常操作期间永远不会被其他后端看到，因为子页面上的锁在两个操作之间保持，但如果操作在写入第二个 WAL 记录之前中断，将会看到这个状态。搜索算法像往常一样处理中间状态，但如果插入遇到设置了不完整分裂标志的页面，它将在继续之前通过将键插入父级来完成中断的分裂。
 
@@ -202,70 +210,84 @@ WAL 记录由所有 WAL 记录类型通用的头部、记录特定数据和有�
 
 构造 WAL 记录的 API 由五个函数组成：XLogBeginInsert、XLogRegisterBuffer、XLogRegisterData、XLogRegisterBufData 和 XLogInsert。首先，调用 XLogBeginInsert()。然后使用 XLogRegister\* 函数注册所有修改的缓冲区和重放更改所需的数据。最后，通过调用 XLogInsert() 将构造的记录插入 WAL。
 
-    XLogBeginInsert();
+```
+XLogBeginInsert();
 
-    /* 注册作为此 WAL 记录操作一部分修改的缓冲区 */
-    XLogRegisterBuffer(0, lbuffer, REGBUF_STANDARD);
-    XLogRegisterBuffer(1, rbuffer, REGBUF_STANDARD);
+/* 注册作为此 WAL 记录操作一部分修改的缓冲区 */
+XLogRegisterBuffer(0, lbuffer, REGBUF_STANDARD);
+XLogRegisterBuffer(1, rbuffer, REGBUF_STANDARD);
 
-    /* 注册始终包含在 WAL 记录中的数据 */
-    XLogRegisterData(&xlrec, SizeOfFictionalAction);
+/* 注册始终包含在 WAL 记录中的数据 */
+XLogRegisterData(&xlrec, SizeOfFictionalAction);
 
-    /*
-     * 注册与缓冲区关联的数据。如果获取完整页面映像，
-     * 这将不包括在记录中。
-     */
-    XLogRegisterBufData(0, tuple->data, tuple->len);
+/*
+ * 注册与缓冲区关联的数据。如果获取完整页面映像，
+ * 这将不包括在记录中。
+ */
+XLogRegisterBufData(0, tuple->data, tuple->len);
 
-    /* 与缓冲区关联的更多数据 */
-    XLogRegisterBufData(0, data2, len2);
+/* 与缓冲区关联的更多数据 */
+XLogRegisterBufData(0, data2, len2);
 
-    /*
-     * 好的，要包含在 WAL 记录中的所有数据和缓冲区
-     * 都已注册。插入记录。
-     */
-    recptr = XLogInsert(RM_FOO_ID, XLOG_FOOBAR_DO_STUFF);
+/*
+ * 好的，要包含在 WAL 记录中的所有数据和缓冲区
+ * 都已注册。插入记录。
+ */
+recptr = XLogInsert(RM_FOO_ID, XLOG_FOOBAR_DO_STUFF);
+```
 
 API 函数的详细信息：
 
 void XLogBeginInsert(void)
 
-    必须在 XLogRegisterBuffer 和 XLogRegisterData 之前调用。
+```
+必须在 XLogRegisterBuffer 和 XLogRegisterData 之前调用。
+```
 
 void XLogResetInsertion(void)
 
-    从 WAL 记录构造工作区中清除任何当前注册的数据和缓冲区。这仅在您已经调用了 XLogBeginInsert()，但最终决定不插入记录时才需要。
+```
+从 WAL 记录构造工作区中清除任何当前注册的数据和缓冲区。这仅在您已经调用了 XLogBeginInsert()，但最终决定不插入记录时才需要。
+```
 
 void XLogEnsureRecordSpace(int max_block_id, int ndatas)
 
-    通常，WAL 记录构造缓冲区有以下限制：
+```
+通常，WAL 记录构造缓冲区有以下限制：
 
-    * 可以使用的最高块 ID 是 4（允许五个块引用）
-    * 最多 20 个注册数据块
+* 可以使用的最高块 ID 是 4（允许五个块引用）
+* 最多 20 个注册数据块
 
-    这些默认限制足以满足大多数更改某些磁盘结构的记录类型。对于需要更多数据或需要修改更多缓冲区的罕见情况，可以通过调用 XLogEnsureRecordSpace() 来提高这些限制。XLogEnsureRecordSpace() 必须在 XLogBeginInsert() 之前调用，并且在临界区之外。
+这些默认限制足以满足大多数更改某些磁盘结构的记录类型。对于需要更多数据或需要修改更多缓冲区的罕见情况，可以通过调用 XLogEnsureRecordSpace() 来提高这些限制。XLogEnsureRecordSpace() 必须在 XLogBeginInsert() 之前调用，并且在临界区之外。
+```
 
 void XLogRegisterBuffer(uint8 block_id, Buffer buf, uint8 flags);
 
-    XLogRegisterBuffer 向 WAL 记录添加有关数据块的信息。block_id 是一个任意数字，用于在重做例程中标识此页面引用。重做时重新找到页面所需的信息——relfilelocator、fork 和块号——都包含在 WAL 记录中。
+```
+XLogRegisterBuffer 向 WAL 记录添加有关数据块的信息。block_id 是一个任意数字，用于在重做例程中标识此页面引用。重做时重新找到页面所需的信息——relfilelocator、fork 和块号——都包含在 WAL 记录中。
 
-    如果这是自上次检查点以来对缓冲区的第一次修改，XLogInsert 将自动包含页面内容的完整副本。使用 XLogRegisterBuffer 注册操作修改的每个缓冲区以避免撕裂页面危险非常重要。
+如果这是自上次检查点以来对缓冲区的第一次修改，XLogInsert 将自动包含页面内容的完整副本。使用 XLogRegisterBuffer 注册操作修改的每个缓冲区以避免撕裂页面危险非常重要。
 
-    标志控制何时以及如何将缓冲区内容包含在 WAL 记录中。通常，仅当页面自上次检查点以来未被修改，并且仅当 full_page_writes=on 或正在进行在线备份时，才获取完整页面映像。REGBUF_FORCE_IMAGE 标志可用于强制始终包含完整页面映像；这对于重写大部分页面的操作很有用，因此跟踪细节不值得。对于不需要防止撕裂页面的罕见情况，可以使用 REGBUF_NO_IMAGE 标志来抑制获取完整页面映像。REGBUF_WILL_INIT 也抑制完整页面映像，但重做例程必须从头开始重新生成页面，而不查看旧页面内容。重新初始化页面像完整页面映像一样防止撕裂页面危险。
+标志控制何时以及如何将缓冲区内容包含在 WAL 记录中。通常，仅当页面自上次检查点以来未被修改，并且仅当 full_page_writes=on 或正在进行在线备份时，才获取完整页面映像。REGBUF_FORCE_IMAGE 标志可用于强制始终包含完整页面映像；这对于重写大部分页面的操作很有用，因此跟踪细节不值得。对于不需要防止撕裂页面的罕见情况，可以使用 REGBUF_NO_IMAGE 标志来抑制获取完整页面映像。REGBUF_WILL_INIT 也抑制完整页面映像，但重做例程必须从头开始重新生成页面，而不查看旧页面内容。重新初始化页面像完整页面映像一样防止撕裂页面危险。
 
-    REGBUF_STANDARD 标志可以与其他标志一起指定，以指示页面遵循标准页面布局。它导致 pd_lower 和 pd_upper 之间的区域从映像中排除，减少 WAL 量。
+REGBUF_STANDARD 标志可以与其他标志一起指定，以指示页面遵循标准页面布局。它导致 pd_lower 和 pd_upper 之间的区域从映像中排除，减少 WAL 量。
 
-    如果给出 REGBUF_KEEP_DATA 标志，则即使获取完整页面映像，使用 XLogRegisterBufData() 注册的每个缓冲区数据也包含在 WAL 记录中。
+如果给出 REGBUF_KEEP_DATA 标志，则即使获取完整页面映像，使用 XLogRegisterBufData() 注册的每个缓冲区数据也包含在 WAL 记录中。
+```
 
 void XLogRegisterData(char \*data, int len);
 
-    XLogRegisterData 用于在 WAL 记录中包含任意数据。如果多次调用 XLogRegisterData()，数据会被追加，并将作为一个连续块提供给重做例程。
+```
+XLogRegisterData 用于在 WAL 记录中包含任意数据。如果多次调用 XLogRegisterData()，数据会被追加，并将作为一个连续块提供给重做例程。
+```
 
 void XLogRegisterBufData(uint8 block_id, char \*data, int len);
 
-    XLogRegisterBufData 用于包含与之前使用 XLogRegisterBuffer() 注册的特定缓冲区关联的数据。如果使用相同的块 ID 多次调用 XLogRegisterBufData()，数据会被追加，并将作为一个连续块提供给重做例程。
+```
+XLogRegisterBufData 用于包含与之前使用 XLogRegisterBuffer() 注册的特定缓冲区关联的数据。如果使用相同的块 ID 多次调用 XLogRegisterBufData()，数据会被追加，并将作为一个连续块提供给重做例程。
 
-    如果在插入时获取缓冲区的完整页面映像，则数据不包括在 WAL 记录中，除非使用 REGBUF_KEEP_DATA 标志。
+如果在插入时获取缓冲区的完整页面映像，则数据不包括在 WAL 记录中，除非使用 REGBUF_KEEP_DATA 标志。
+```
 
 ## 编写 REDO 例程
 

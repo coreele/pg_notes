@@ -2,7 +2,7 @@
 
 PostgreSQL 内核学习笔记，侧重底层原理和实现源码，建议搭配代码调试。
 
----
+______________________________________________________________________
 
 ## 基础篇
 
@@ -21,8 +21,8 @@ PostgreSQL 内核学习笔记，侧重底层原理和实现源码，建议搭配
 ## 阅读建议
 
 1. **run**：参考 [编译文档](Begin/compile.md) 本地构建 PG，学会 attach 进程调试。
-2. **code**：笔记只是线索，核心逻辑请以 `src/backend` 下的 C 代码为准。
-3. **debug**：建议通过 `gdb` 断点观察关键结构体（如 `ProcessUtility`, `ExecScan`）的运行时状态。
+1. **code**：笔记只是线索，核心逻辑请以 `src/backend` 下的 C 代码为准。
+1. **debug**：建议通过 `gdb` 断点观察关键结构体（如 `ProcessUtility`, `ExecScan`）的运行时状态。
 
 ## 参考资料
 
@@ -30,6 +30,6 @@ PostgreSQL 内核学习笔记，侧重底层原理和实现源码，建议搭配
 - [PostgreSQL Source Code](https://github.com/postgres/postgres)
 - [The Internals of PostgreSQL (book)](http://www.interdb.jp/pg/)
 
----
+______________________________________________________________________
 
 **Maintainer**: [coreele](https://github.com/coreele/pg_notes)

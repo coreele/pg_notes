@@ -38,9 +38,9 @@ LockRelease
                      → 获取锁成功
 ```
 
-| PROC A (持有锁)                                    | PROC B(请求锁)                                               |
+| PROC A (持有锁) | PROC B(请求锁) |
 | -------------------------------------------------- | ------------------------------------------------------------ |
-| LockAcquire                                        |                                                              |
-|                                                    | LockAcquire<br>-> 冲突<br>-> 加入 wait queue<br>-> ProcSleep |
-| LockRelease<br>-> ProcLockWakeup<br>-> SetLatch(B) |                                                              |
-|                                                    | 被唤醒<br>-> 重新检查<br>-> 获取锁                           |
+| LockAcquire | |
+| | LockAcquire<br>-> 冲突<br>-> 加入 wait queue<br>-> ProcSleep |
+| LockRelease<br>-> ProcLockWakeup<br>-> SetLatch(B) | |
+| | 被唤醒<br>-> 重新检查<br>-> 获取锁 |

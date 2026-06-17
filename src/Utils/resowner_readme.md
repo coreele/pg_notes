@@ -18,10 +18,10 @@ ResourceOwner API 的设计借鉴了我们的 MemoryContext API，后者在防�
 
 ResourceOwner 的基本操作包括：
 
-*   **创建**一个 ResourceOwner
-*   将某些资源与 ResourceOwner **关联**或**解除关联**
-*   **释放**（Release）ResourceOwner 的资产（释放所有拥有的资源，但不释放 owner 对象本身）
-*   **删除**（Delete）一个 ResourceOwner（包括子 owner 对象）；在此之前必须已释放所有资源
+- **创建**一个 ResourceOwner
+- 将某些资源与 ResourceOwner **关联**或**解除关联**
+- **释放**（Release）ResourceOwner 的资产（释放所有拥有的资源，但不释放 owner 对象本身）
+- **删除**（Delete）一个 ResourceOwner（包括子 owner 对象）；在此之前必须已释放所有资源
 
 此 API 直接支持 `src/backend/utils/resowner/resowner.c` 中 `ResourceOwnerData` 结构体定义所列出的资源类型。其他对象可以通过在其内部记录所属 ResourceOwner 的地址来与 ResourceOwner 关联。API 提供了钩子机制，允许其他模块在 ResourceOwner 释放期间介入，以便扫描各自的数据结构并找到需要删除的对象。
 

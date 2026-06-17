@@ -4,13 +4,13 @@
 
 在 PostgreSQL 的逻辑层（Query Tree 阶段），最核心的逻辑算子主要有以下几类：
 
-1. 扫描算子 (Scan / RangeTable) 
-2. 过滤算子 (Filter / Quals) 
-3. 连接算子 (Join) 
-4. 投影算子 (Project / TargetList) 
-5. 聚合算子 (Aggregate / Grouping) 
-6. 排序算子 (Sort) 
-7. 集合算子 (Set Operations) 
+1. 扫描算子 (Scan / RangeTable)
+1. 过滤算子 (Filter / Quals)
+1. 连接算子 (Join)
+1. 投影算子 (Project / TargetList)
+1. 聚合算子 (Aggregate / Grouping)
+1. 排序算子 (Sort)
+1. 集合算子 (Set Operations)
 
 ### 逻辑算子与物理算子的转换（核心对比）
 

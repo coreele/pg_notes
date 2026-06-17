@@ -8,7 +8,7 @@
 
 1. 相关函数: `parse_analyze_fixedparams`
 
-2. 核心流程
+1. 核心流程
 
 `RawStmt/parsetree` ----> `parse analysis（analyze.c）` + `ParseState` ----> `Query`
 
@@ -55,7 +55,7 @@ typedef struct Query
 } Query;
 ```
 
----
+______________________________________________________________________
 
 ### 查询分类
 
@@ -78,12 +78,12 @@ select a, b FROM tb where a = 2;
 
 ### 对象层级关系
 
-| 层级         | 中文名称        | 核心作用                           | 唯一标识        | 关联系统表     |
+| 层级 | 中文名称 | 核心作用 | 唯一标识 | 关联系统表 |
 | ------------ | --------------- | ---------------------------------- | --------------- | -------------- |
-| Database     | 数据库          | 最高级隔离单元（独立的系统表集合） | `OID`           | `pg_database`  |
-| Schema       | 模式 / 名称空间 | 数据库内的逻辑隔离单元             | `OID`           | `pg_namespace` |
-| **Relation** | 关系            | 模式内的核心对象（表/索引/视图等） | `OID`           | `pg_class`     |
-| Column       | 字段            | 关系内的最小数据单元               | `OID`+`attrnum` | `pg_attribute` |
+| Database | 数据库 | 最高级隔离单元（独立的系统表集合） | `OID` | `pg_database` |
+| Schema | 模式 / 名称空间 | 数据库内的逻辑隔离单元 | `OID` | `pg_namespace` |
+| **Relation** | 关系 | 模式内的核心对象（表/索引/视图等） | `OID` | `pg_class` |
+| Column | 字段 | 关系内的最小数据单元 | `OID`+`attrnum` | `pg_attribute` |
 
 参考文档：
 
@@ -117,12 +117,12 @@ transformselectStmt
 ### 表的多种抽象形式
 
 1. 文本标识: `tb --- Identifier —— RangeVar`
-2. 语法分析: `RangeVar --- selectStmt::fromClause`
-3. 语义分析: `RangeTableEntry --- ParseState::p_rtable --- Query::p_rtable`
-4. 名称空间: `NamespaceItem --- ParseState::p_namespace`
-5. 优化结构: `RelOptInfo`: TODO
-6. 关系缓存: `Relation ---- relation_open()`
-7. 持久数据: `pg_class` + `pg_attribute`, `pg_attrdef`, `pg_index`, `pg_constraint`, `pg_rewrite`, ...
+1. 语法分析: `RangeVar --- selectStmt::fromClause`
+1. 语义分析: `RangeTableEntry --- ParseState::p_rtable --- Query::p_rtable`
+1. 名称空间: `NamespaceItem --- ParseState::p_namespace`
+1. 优化结构: `RelOptInfo`: TODO
+1. 关系缓存: `Relation ---- relation_open()`
+1. 持久数据: `pg_class` + `pg_attribute`, `pg_attrdef`, `pg_index`, `pg_constraint`, `pg_rewrite`, ...
 
 ```text
 SQL: FROM tb
@@ -217,11 +217,12 @@ SysCache[RELNAMENSP]
 1. 获取`relid` (`RangeVar`->`relid`)
 
    1. 由于 `RelCache` 不支持字符串查找，内核首先访问 `SysCache`（具体为 `RELNAMENSP` 缓存）
-   2. 利用 `RangeVar` 提供的表名和 Schema 信息进行匹配，获取该表的唯一身份 id：`relid`
+   1. 利用 `RangeVar` 提供的表名和 Schema 信息进行匹配，获取该表的唯一身份 id：`relid`
 
-2. 查找表结构 (`relid`->`Relation`)
+1. 查找表结构 (`relid`->`Relation`)
+
    1. 拿到 `relid` 后，内核转而访问 `RelCache`
-   2. 通过 `relid` 这一唯一键检索 `RelationIdCache` 哈希表
+   1. 通过 `relid` 这一唯一键检索 `RelationIdCache` 哈希表
 
 `RangeVar` --> `relid` --> `Relation`
 
@@ -270,14 +271,14 @@ RangeVarGetRelidExtended
 
 1. `select a as x, b as y from tb;`
 
-2. `select x, y, c from tb as t(x, y);`（仅 PG 支持）
+1. `select x, y, c from tb as t(x, y);`（仅 PG 支持）
 
 在 PostgreSQL 中，这两种方式分别对应 **“投影别名”** 和 **“数据源别名”**。
 
-| 方式           | 语法示例             | 生效阶段            | 核心作用                     |
+| 方式 | 语法示例 | 生效阶段 | 核心作用 |
 | -------------- | -------------------- | ------------------- | ---------------------------- |
-| **投影别名**   | `select a AS x ...`  | **输出层** (Output) | **修饰性**：重命名输出列     |
-| **数据源别名** | `FROM tb AS t(x, y)` | **输入层** (Input)  | **结构性**：重定义表结构标识 |
+| **投影别名** | `select a AS x ...` | **输出层** (Output) | **修饰性**：重命名输出列 |
+| **数据源别名** | `FROM tb AS t(x, y)` | **输入层** (Input) | **结构性**：重定义表结构标识 |
 
 ### 为什么需要数据源别名?
 
@@ -329,7 +330,6 @@ transformTargetList /* parser/parse_target.c */
 `qual = transformWhereClause`
 
 操作符元数据查询，`pg_operator` 元数据中重点关注
-
 
 ```sql
 select * from pg_operator where oprname = '=';

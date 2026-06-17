@@ -56,4 +56,3 @@
 ├── access 实现核心存储访问机制，包括表和索引的数据读写、事务可见性控制等; heap, btree, mvcc(visibility)
 └── storage 实现存储子系统，包含缓冲池、事务日志（WAL）、磁盘文件管理等
 ```
-
