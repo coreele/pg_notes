@@ -1,7 +1,53 @@
-- name: Install mdBook
-  uses: peaceiris/actions-mdbook@v2
-  with:
-    mdbook-version: 'latest'
+name: Deploy mdBook to GitHub Pages
 
-- name: Build book
-  run: mdbook build
+on:
+  push:
+    branches:
+      - main # 或者你的主分支名，比如 master
+
+# 设置 GitHub Actions 的权限，允许它部署到 GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 限制同一时间只有一个部署任务在运行
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 拉取你的代码
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. 初始化 GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # 3. 安装 mdBook
+      - name: Install mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: 'latest'
+
+      # 4. 编译 mdBook
+      - name: Build book
+        run: mdbook build
+
+      # 5. 上传生成结果到 GitHub Pages
+      - name: Upload book artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: book
+
+      # 6. 部署到 GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
