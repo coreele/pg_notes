@@ -30,7 +30,7 @@ explain select * from tb where a = 5432;
    Index Cond: (a = 5432)
 ```
 
-### width = 12?
+why width = 12?
 
 ```sql
 select attname, avg_width from pg_stats where tablename='tb';
