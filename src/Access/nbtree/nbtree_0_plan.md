@@ -49,3 +49,32 @@ explain select a from tb where a = 5432;
  Index Only Scan using idx on tb  (cost=0.29..4.31 rows=1 width=4)
    Index Cond: (a = 5432)
 ```
+
+## Bitmap Index Scan
+
+```sql
+explain select * from tb where a = 5000 or a = 8000;
+                               QUERY PLAN                               
+------------------------------------------------------------------------
+ Bitmap Heap Scan on tb  (cost=8.60..16.27 rows=2 width=12)
+   Recheck Cond: ((a = 5000) OR (a = 8000))
+   ->  BitmapOr  (cost=8.60..8.60 rows=2 width=0)
+         ->  Bitmap Index Scan on idx  (cost=0.00..4.30 rows=1 width=0)
+               Index Cond: (a = 5000)
+         ->  Bitmap Index Scan on idx  (cost=0.00..4.30 rows=1 width=0)
+               Index Cond: (a = 8000)
+```
+
+
+```sql
+
+explain select * from tb where a in (5000, 8000);
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Index Scan using idx on tb  (cost=0.29..12.62 rows=2 width=12)
+   Index Cond: (a = ANY ('{5000,8000}'::integer[]))
+```
+
+why different with `a in(5000, 8000)`?
+
+B-Tree 索引的多键下跳（Multi-Index Scan / Multi-scan） | ScalarArrayOpExpr Index Optimization

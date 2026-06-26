@@ -7,14 +7,14 @@ insert into tb select n, '1234567890' from generate_series(1, 100000) as n;
 create index idx on tb(a);
 ANALYZE tb;
 
-explain select * from tb where a = 5432;
-                          QUERY PLAN                           
+explain select * from tb where a between 5000 and 5001;
+                          QUERY PLAN
 ---------------------------------------------------------------
- Index Scan using idx on tb  (cost=0.29..8.31 rows=1 width=15)
-   Index Cond: (a = 5432)
+ Index Scan using idx on tb  (cost=0.29..8.33 rows=2 width=12)
+   Index Cond: ((a >= 5000) AND (a <= 5001))
 ```
 
-### execute
+## execute
 
 exec_simple_query
 
@@ -45,6 +45,9 @@ PortalRun | PortalRunSelect
                                                 ItemPointerGetBlockNumberNoCheck
                                                     BlockIdGetBlockNumber
                                         _bt_binsrch
+                                        _bt_readpage
+                                            _bt_checkkeys
+                                            _bt_saveitem
                             index_fetch_heap
                                 table_index_fetch_tuple
                                     heapam_index_fetch_tuple
