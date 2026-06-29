@@ -1,4 +1,4 @@
-# INDEX(`nbtree`)
+# INDEX page
 
 ```sql
 drop table if exists tb;

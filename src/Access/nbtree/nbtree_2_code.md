@@ -1,4 +1,4 @@
-# INDEX
+# INDEX execute
 
 ```sql
 drop table if exists tb;
@@ -14,9 +14,10 @@ explain select * from tb where a between 5000 and 5001;
    Index Cond: ((a >= 5000) AND (a <= 5001))
 ```
 
-## execute
+## IndexNext
 
-exec_simple_query
+- `index_getnext_tid`: 获取 tid
+- `index_fetch_heap`: 回表获得原始数据
 
 ```c
 PortalStart
@@ -34,25 +35,35 @@ PortalRun | PortalRunSelect
                     IndexNext
                         index_beginscan
                         index_getnext_slot
-                            index_getnext_tid
+                            index_getnext_tid /* get tid */
                                 btgettuple
-                                    _bt_first /* or _bt_next */
-                                        _bt_search
-                                            _bt_getroot
-                                            _bt_binsrch
-                                                _bt_compare
-                                            child = BTreeTupleGetDownLink(itup);
-                                                ItemPointerGetBlockNumberNoCheck
-                                                    BlockIdGetBlockNumber
-                                        _bt_binsrch
-                                        _bt_readpage
-                                            _bt_checkkeys
-                                            _bt_saveitem
-                            index_fetch_heap
+                            index_fetch_heap /* get tuple */
                                 table_index_fetch_tuple
                                     heapam_index_fetch_tuple
                                         heap_hot_search_buffer
                 ExecQual
                 ExecProject /* where a = 5432 and b <> 'aaa' */
 PortalDrop
+```
+
+## btgettuple
+
+- `_bt_first`: Find the first item in a scan
+- `_bt_next`: Get the next item in a scan
+
+```c
+index_getnext_tid
+    btgettuple
+        _bt_first /* or _bt_next */
+            _bt_search
+                _bt_getroot
+                _bt_binsrch /* binary search */
+                    _bt_compare
+                child = BTreeTupleGetDownLink(itup);
+                    ItemPointerGetBlockNumberNoCheck
+                        BlockIdGetBlockNumber
+            _bt_binsrch
+            _bt_readpage /* get tid */
+                _bt_checkkeys
+                _bt_saveitem
 ```
