@@ -15,7 +15,7 @@
 
 ## optimizer
 
-- why: optimizer
+- how: optimizer
 - how: Join Order
 - How: Path to Plan Conversion
 
@@ -34,7 +34,7 @@
 ## access
 
 - what: index types
-- why: nbtree
+- why & how: nbtree
 
 ## memory
 
@@ -51,8 +51,7 @@
 - why: Heap File Organization
 - why: VM and FSM
 - what & when: Deduplication
-- how: VACUUM
-
+- why & how: VACUUM
 - Why & How: TOAST
 
 ## wal
@@ -67,3 +66,19 @@
 
 - how & when: Parallel Query
 - What & when & why: JIT Compilation
+
+## distributed
+
+- [neon](https://github.com/neondatabase/neon)
+- [citus](https://github.com/citusdata/citus)
+- 
+
+## blog
+
+- [Scaling PostgreSQL](https://openai.com/index/scaling-postgresql/?ref=dailydev)
+
+- **PostgreSQL**：理解经典关系数据库内核（存储、事务、优化器、执行器）。
+- **DuckDB**：学习现代单机分析数据库（向量化执行、列存、SIMD）。
+- **ClickHouse** —— 学现代列存实现和高性能执行器。
+- **StarRocks 或 Apache Doris**：学习现代 MPP OLAP（分布式执行、Shuffle、Pipeline）。
+- **Snowflake/BigQuery**：了解云原生分析数据库的计算存储分离架构。
