@@ -1,6 +1,6 @@
 # insert
 
-![](./../Storage/assets/insert.svg)
+![](../backend/storage/assets/insert.svg)
 
 - 调试语句：`insert into tb values(1)`
 
