@@ -56,7 +56,7 @@ typedef struct SnapshotData
 }
 ```
 
-## 2. 行的可见性判定逻辑 [mvcc_visibility](mvcc_visibility.md)
+## 2. 行的可见性判定逻辑 [mvcc_visibility](08_mvcc_visibility.md)
 
 每一行数据（HeapTuple）头部都有 `t_xmin`（插入者的 XID）和 `t_xmax`（删除/更新者的 XID）。基本方式如下：
 
