@@ -4,10 +4,10 @@
 
 # Meta
 
-- [Architecture](./_meta/00_arch.md)
-- [Code Structure](./_meta/01_code.md)
-- [Compile](./_meta/02_compile.md)
-- [Boot](./_meta/03_boot.md)
+- [Architecture](./meta/00_arch.md)
+- [Code Structure](./meta/01_code.md)
+- [Compile](./meta/02_compile.md)
+- [Boot](./meta/03_boot.md)
 
 # Traces
 

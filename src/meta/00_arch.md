@@ -1,4 +1,4 @@
-﻿# Architecture
+# Architecture
 
 ## Process Architecture
 
@@ -10,10 +10,10 @@
 
 > https://www.interdb.jp/pg/pgsql02/01.html
 
-## PG 鍐呮牳鍏ㄦ櫙
+## PG 内核全景
 
-- **鎺у埗**锛氬垎鏋? 浼樺寲, 鎵ц
-- **鏁版嵁**锛氳闂柟娉?Heap/Index, **Buffer Cache**, 鐗╃悊纾佺洏)
-- **浜嬪姟**锛歀ock Manager, WAL/CLOG, MVCC (Visible check)
-- **鍏冩暟鎹?*锛歋yscache(绯荤粺琛ㄧ紦瀛?, Relcache(琛ㄥ畾涔夌紦瀛?
-- **杩愯**锛歁emoryContext, 淇″彿閲?鍏变韩鍐呭瓨, 杈呭姪杩涚▼
+- **控制**：分析, 优化, 执行
+- **数据**：访问方法(Heap/Index, **Buffer Cache**, 物理磁盘)
+- **事务**：Lock Manager, WAL/CLOG, MVCC (Visible check)
+- **元数据**：Syscache(系统表缓存), Relcache(表定义缓存)
+- **运行**：MemoryContext, 信号量/共享内存, 辅助进程

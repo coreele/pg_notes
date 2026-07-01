@@ -1,14 +1,14 @@
-﻿# Boot
+# Boot
 
-| 鍑芥暟鍚?| 鏍稿績鍔熻兘 | 鍏抽敭缁嗚妭 |
+| 函数名 | 核心功能 | 关键细节 |
 | ------------------- | ------------- | -------------------------------------------------- |
-| `exec_simple_query` | 鎵ц绠€鍗?SQL锛堝崟鍛戒护锛?| 鎵ц SQL锛氳В鏋?鈫?閲嶅啓 鈫?浼樺寲 鈫?鎵ц |
-| `PostgresMain` | 鍚庣涓诲嚱鏁?| 寰幆澶勭悊澶氬懡浠わ紝鍏宠仈 MessageContext/row_description_context |
-| `BackendRun` | 杩愯鍚庣閫昏緫 | 鍒囨崲鍐呭瓨涓婁笅鏂囪嚦 TopMemoryContext |
-| `BackendStartup` | 鍒涘缓鍚庣杩涚▼ | fork_process 鍒涘缓瀛愯繘绋嬶紝澶辫触杩斿洖-1 |
-| `ServerLoop` | 鏈嶅姟鍣ㄤ簨浠跺惊鐜?| 绛夊緟骞跺鐞嗗鎴风杩炴帴 |
-| `PostmasterMain` | 涓昏繘绋嬩富寰幆 | 璇诲彇閰嶇疆锛岀洃鍚繛鎺ワ紝绠＄悊瀛愯繘绋嬶紝PostmasterContext=TopMemoryContext |
-| `main` | 绋嬪簭鍏ュ彛 | 鍒濆鍖栫幆澧冿紝鍒嗛厤 TopMemoryContext锛岃皟鐢?PostmasterMain |
+| `exec_simple_query` | 执行简单 SQL（单命令） | 执行 SQL：解析 → 重写 → 优化 → 执行 |
+| `PostgresMain` | 后端主函数 | 循环处理多命令，关联 MessageContext/row_description_context |
+| `BackendRun` | 运行后端逻辑 | 切换内存上下文至 TopMemoryContext |
+| `BackendStartup` | 创建后端进程 | fork_process 创建子进程，失败返回-1 |
+| `ServerLoop` | 服务器事件循环 | 等待并处理客户端连接 |
+| `PostmasterMain` | 主进程主循环 | 读取配置，监听连接，管理子进程，PostmasterContext=TopMemoryContext |
+| `main` | 程序入口 | 初始化环境，分配 TopMemoryContext，调用 PostmasterMain |
 
 ```cpp
 main
