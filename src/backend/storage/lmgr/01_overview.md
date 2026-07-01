@@ -55,7 +55,7 @@ update tb set a = 2; -- blocked
 | `EXCL.` | | X | X | X | X | X | X | X |
 | `ACCESS EXCL.` | X | X | X | X | X | X | X | X |
 
-![](assets/lock_conflict_matrix.png)
+![](../assets/lock_conflict_matrix.png)
 
 ```text
 业务操作

@@ -7,7 +7,7 @@
 
 ## 缓存结构
 
-![](assets/data_buffer.png)
+![](../assets/data_buffer.png)
 
 ### BufferMapping
 

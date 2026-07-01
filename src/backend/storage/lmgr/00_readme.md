@@ -209,7 +209,7 @@ static HTAB *LockMethodProcLockHash;
 static HTAB *LockMethodLocalHash;
 ```
 
-[draw_proclock](assets/draw_proclock.md)
+[draw_proclock](../assets/draw_proclock.md)
 
 ## 锁管理器内部锁定机制
 
