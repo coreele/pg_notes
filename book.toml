@@ -5,3 +5,7 @@ language = "en"
 
 [output.html]
 additional-css = ["theme/custom.css"]
+
+[output.html.fold]
+enable = true
+level = 0
