@@ -10,7 +10,7 @@ ANALYZE tb;
 explain select * from tb where a between 5000 and 5001;
                           QUERY PLAN
 ---------------------------------------------------------------
- Index Scan using idx on tb  (cost=0.29..8.33 rows=2 width=12)
+ Index Scan using idx on tb  (cost=0.29..8.33 rows=2 width=15)
    Index Cond: ((a >= 5000) AND (a <= 5001))
 ```
 
