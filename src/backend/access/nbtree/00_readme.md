@@ -1,56 +1,41 @@
 src/backend/access/nbtree/README
 
-# Btree Indexing
 
-This directory contains a correct implementation of Lehman and Yao's
-high-concurrency B-tree management algorithm (P. Lehman and S. Yao,
-Efficient Locking for Concurrent Operations on B-Trees, ACM Transactions
-on Database Systems, Vol 6, No. 4, December 1981, pp 650-670). We also
-use a simplified version of the deletion logic described in Lanin and
-Shasha (V. Lanin and D. Shasha, A Symmetric Concurrent B-Tree Algorithm,
-Proceedings of 1986 Fall Joint Computer Conference, pp 380-389).
+# Btree Indexing（B树索引）
 
-## The basic Lehman & Yao Algorithm
+该目录实现了 **Lehman-Yao 高并发B树管理算法**（论文：P. Lehman 与 S. Yao，《Efficient Locking for Concurrent Operations on B-Trees》，ACM Transactions on Database Systems，第6卷第4期，1981年12月，650-670页）。
+同时简化实现了 Lanin & Shasha 提出的删除逻辑（论文：V. Lanin 与 D. Shasha，《A Symmetric Concurrent B-Tree Algorithm》，1986年秋季联合计算机会议论文集，380-389页）。
 
-Compared to a classic B-tree, L&Y adds a right-link pointer to each page,
-to the page's right sibling. It also adds a "high key" to each page, which
-is an upper bound on the keys that are allowed on that page. These two
-additions make it possible to detect a concurrent page split, which allows
-the tree to be searched without holding any read locks (except to keep a
-single page from being modified while reading it).
+## Lehman & Yao 基础算法原理
 
-When a search follows a downlink to a child page, it compares the page's
-high key with the search key. If the search key is greater than the high
-key, the page must've been split concurrently, and you must follow the
-right-link to find the new page containing the key range you're looking
-for. This might need to be repeated, if the page has been split more than
-once.
+相较于经典B树，L&Y算法给每一页新增两个核心结构：
+1. **右兄弟指针（right-link）**：指向当前页面的右侧兄弟页；
+2. **高位键（high key）**：当前页面允许存储的所有键值的上界。
 
-Lehman and Yao talk about alternating "separator" keys and downlinks in
-internal pages rather than tuples or records. We use the term "pivot"
-tuple to refer to tuples which don't point to heap tuples, that are used
-only for tree navigation. All tuples on non-leaf pages and high keys on
-leaf pages are pivot tuples. Since pivot tuples are only used to represent
-which part of the key space belongs on each page, they can have attribute
-values copied from non-pivot tuples that were deleted and killed by VACUUM
-some time ago. A pivot tuple may contain a "separator" key and downlink,
-just a separator key (i.e. the downlink value is implicitly undefined), or
-just a downlink (i.e. all attributes are truncated away).
+依靠这两个新增结构，事务可以感知页面被并发分裂的场景；查询过程**全程无需持有读锁**（仅在读单页时短暂防止页面被并发修改）。
 
-The requirement that all btree keys be unique is satisfied by treating heap
-TID as a tiebreaker attribute. Logical duplicates are sorted in heap TID
-order. This is necessary because Lehman and Yao also require that the key
-range for a subtree S is described by Ki < v <= Ki+1 where Ki and Ki+1 are
-the adjacent keys in the parent page (Ki must be _strictly_ less than v,
-which is assured by having reliably unique keys). Keys are always unique
-on their level, with the exception of a leaf page's high key, which can be
-fully equal to the last item on the page.
+查询流程逻辑：
+当遍历器通过向下指针进入子页面时，会对比查询键与当前页的高位键：
+- 若查询键大于页面高位键，说明该页已被其他事务并发分裂；
+- 必须沿着右兄弟指针跳转，去新页面中查找目标键区间；
+- 若页面发生过多次分裂，则该跳转逻辑需要循环执行，直到定位到正确页面。
 
-The Postgres implementation of suffix truncation must make sure that the
-Lehman and Yao invariants hold, and represents that absent/truncated
-attributes in pivot tuples have the sentinel value "minus infinity". The
-later section on suffix truncation will be helpful if it's unclear how the
-Lehman & Yao invariants work with a real world example.
+Lehman & Yao 原文中，内部页面交替存储 **分隔键（separator）** 与向下指针，而非数据元组/记录。
+本实现使用术语 **枢轴元组（pivot tuple）** 描述一类特殊元组：它不指向堆表数据，仅用于树结构路由导航。
+- 所有非叶子页上的元组、叶子页的高位键，均属于枢轴元组；
+- 枢轴元组仅用于划分各页面的键值域，其字段值可以复用那些被VACUUM清理删除的普通数据元组字段；
+- 枢轴元组存在三种形态：
+  1. 同时包含分隔键与向下指针；
+  2. 仅含分隔键（向下指针隐式无效）；
+  3. 仅含向下指针（所有字段均被后缀截断）。
+
+### 索引键唯一性保证
+
+所有B树索引键的唯一性，依靠 **堆表TID（行号）** 作为 **排序决胜字段** 实现：逻辑重复的索引键，会按照堆表TID排序区分。
+该唯一性是L&Y算法的硬性前提：父页面中相邻两个键 $K_i$、$K_{i+1}$ 对应的子树S，其值域必须满足 $K_i < v \le K_{i+1}$；区间左边界为严格小于，只有全局唯一键才能稳定满足该约束。树中同一层级的所有键均唯一，仅有一个例外：叶子页的高位键允许和页内最后一条记录的键完全相等。
+
+PostgreSQL 的 **后缀截断（suffix truncation）** 实现必须保证 L&Y 算法的不变式恒成立；对于枢轴元组中被截断、缺失的字段，统一用哨兵值**负无穷（minus infinity）** 表示。后文专门讲解后缀截断的章节会结合实例，清晰说明 L&Y 不变式在工程实现中的约束规则。
+
 
 ## Differences to the Lehman & Yao algorithm
 
