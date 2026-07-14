@@ -3,9 +3,7 @@
 ![](../backend/storage/assets/insert.svg)
 
 - 调试语句：`insert into tb values(1)`
-
 - insert 核心流程梳理，将从最简单的插入数据开始，逐步讨论事务、锁、资源管理等相关内容
-
 - 调试语句：`insert into tb values(1)`
 
 ## 概览
@@ -220,24 +218,45 @@ select lp, lp_off, lp_flags, lp_len, t_xmin, t_xmax, t_field3, t_ctid, t_infomas
 
 解释：基于 Hint Bits 的延迟状态更新
 
-事务状态的判定权在日志（CLOG），而页面上的标记（Hint Bits）只是为了加速访问而做的“缓存回填”。
+Hint Bits 是 CLOG 的缓存，提交/回滚时不改数据页，首次访问时再回填。
 
-1. 事务提交阶段 (Commit Phase)
+| 阶段     | 动作                     | 页上 `t_infomask`                    |
+| -------- | ------------------------ | ------------------------------------ |
+| COMMIT   | 只写 WAL + CLOG          | `XMIN_COMMITTED` 仍为 0              |
+| 首次访问 | 查 CLOG → Buffer 设 hint | 置 `HEAP_XMIN_COMMITTED`             |
+| ROLLBACK | 不改页                   | 后续置 `HEAP_XMIN_INVALID`，行不可见 |
 
-- 动作：当执行 COMMIT 时，数据库仅在 WAL (预写日志) 和 CLOG (事务状态日志) 中记录该事务已完成。
-- 状态：此时，磁盘数据页（Data Page）里的元组完全没有被触碰，元组头部的 t_infomask 中，XMIN_COMMITTED 位依然为 0。
-- 目的：保证提交操作是“轻量级”的，避免因修改大量数据页而导致的同步 I/O 阻塞。
+目的：提交轻量，避免为 hint 同步刷大量数据页。
 
-2. 首次访问阶段 (First Access / Hint Bit Setting)
+## WAL 实验
 
-- 触发：事务提交后的第一个“路过”该元组的扫描进程（可以是查询、手动 Vacuum 等）发现该行没有提交标记。
-- 检查：进程根据元组的 t_xmin 去内存中的 CLOG 缓存查找该事务的真实状态。
-- 设置：一旦确认事务已提交，该进程会直接在内存缓冲区（Buffer Cache）中修改该元组的 t_infomask，将其 HEAP_XMIN_COMMITTED 位置为 1。
-- 刷盘：这个带有“标记”的页面随后会由后台进程（Checkpointer 或 BgWriter）异步刷回磁盘。
+```sql
+CREATE EXTENSION IF NOT EXISTS pageinspect;
+DROP TABLE IF EXISTS tb;
+CREATE TABLE tb(a int);
 
-3. 事务回滚阶段 (Rollback Phase)
+\set AUTOCOMMIT off
+SELECT pg_current_wal_insert_lsn() AS lsn_before;
+INSERT INTO tb VALUES (1);
+SELECT pg_current_wal_insert_lsn() AS lsn_after;   -- INSERT 后 lsn 已前进
+SELECT lsn FROM page_header(get_raw_page('tb', 0)); -- 页 lsn 对应 heap WAL
+COMMIT;
+```
 
-- 标记：如果事务执行了 ROLLBACK，同样地，页面不会立即变化。
-- 判定：后续进程查 CLOG 发现事务已回滚。
-- 操作：进程将元组的 t_infomask 中的 HEAP_XMIN_INVALID 位置为 1。
-- 后果：这行数据从此变成了“脏数据”或“陈旧元组”。虽然它物理上还占着那 32 字节的空间，但所有查询都会直接无视它。
+```sh
+# 从 lsn_before 起读 WAL（替换为实际值）
+pg_waldump -s 0/12526EC0 -n 10 -p ~/pgdata/pg_wal
+
+rmgr: Heap        len (rec/tot):     59/    59, tx:       1928, lsn: 0/12526EC0, prev 0/12526E88, desc: INSERT+INIT off: 1, flags: 0x00, blkref #0: rel 1663/5/107758 blk 0
+rmgr: Transaction len (rec/tot):     34/    34, tx:       1928, lsn: 0/12526F00, prev 0/12526EC0, desc: COMMIT 2026-07-13 10:16:31.676185 CST
+rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/12526F28, prev 0/12526F00, desc: RUNNING_XACTS nextXid1929 latestCompletedXid 1928 oldestRunningXid 1929
+rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/12526F60, prev 0/12526F28, desc: RUNNING_XACTS nextXid1929 latestCompletedXid 1928 oldestRunningXid 1929
+rmgr: XLOG        len (rec/tot):    114/   114, tx:          0, lsn: 0/12526F98, prev 0/12526F60, desc: CHECKPOINT_ONLINE redo 0/12526F60; tli 1; prev tli 1; fpw true; xid 0:1929; oid 115947; multi 1; offset 0; oldest xid 722 in DB 1; oldest multi 1 in DB 1; oldest/newest commit timestamp xid: 0/0; oldest running xid 1929; online
+rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/12527010, prev 0/12526F98, desc: RUNNING_XACTS nextXid1929 latestCompletedXid 1928 oldestRunningXid 1929
+```
+
+## 延伸阅读
+
+- WAL 原理图：`../backend/access/transam/assets/draw_wal_principle.md`
+- 恢复：`../backend/access/transam/09_wal_recovery.md`
+- 事务概览：`../backend/access/transam/01_overview.md`
