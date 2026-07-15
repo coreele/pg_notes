@@ -228,31 +228,44 @@ Hint Bits 是 CLOG 的缓存，提交/回滚时不改数据页，首次访问时
 
 目的：提交轻量，避免为 hint 同步刷大量数据页。
 
-## WAL 实验
+## WAL 日志
 
 ```sql
-CREATE EXTENSION IF NOT EXISTS pageinspect;
 DROP TABLE IF EXISTS tb;
+
 CREATE TABLE tb(a int);
 
 \set AUTOCOMMIT off
+
 SELECT pg_current_wal_insert_lsn() AS lsn_before;
+ lsn_before 
+------------
+ 0/102BEB10
+(1 row)
+
 INSERT INTO tb VALUES (1);
+
 SELECT pg_current_wal_insert_lsn() AS lsn_after;   -- INSERT 后 lsn 已前进
+ lsn_after  
+------------
+ 0/102BEB50
+(1 row)
+
 SELECT lsn FROM page_header(get_raw_page('tb', 0)); -- 页 lsn 对应 heap WAL
+    lsn     
+------------
+ 0/102BEB50
+(1 row)
+
 COMMIT;
 ```
 
 ```sh
 # 从 lsn_before 起读 WAL（替换为实际值）
-pg_waldump -s 0/12526EC0 -n 10 -p ~/pgdata/pg_wal
-
-rmgr: Heap        len (rec/tot):     59/    59, tx:       1928, lsn: 0/12526EC0, prev 0/12526E88, desc: INSERT+INIT off: 1, flags: 0x00, blkref #0: rel 1663/5/107758 blk 0
-rmgr: Transaction len (rec/tot):     34/    34, tx:       1928, lsn: 0/12526F00, prev 0/12526EC0, desc: COMMIT 2026-07-13 10:16:31.676185 CST
-rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/12526F28, prev 0/12526F00, desc: RUNNING_XACTS nextXid1929 latestCompletedXid 1928 oldestRunningXid 1929
-rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/12526F60, prev 0/12526F28, desc: RUNNING_XACTS nextXid1929 latestCompletedXid 1928 oldestRunningXid 1929
-rmgr: XLOG        len (rec/tot):    114/   114, tx:          0, lsn: 0/12526F98, prev 0/12526F60, desc: CHECKPOINT_ONLINE redo 0/12526F60; tli 1; prev tli 1; fpw true; xid 0:1929; oid 115947; multi 1; offset 0; oldest xid 722 in DB 1; oldest multi 1 in DB 1; oldest/newest commit timestamp xid: 0/0; oldest running xid 1929; online
-rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/12527010, prev 0/12526F98, desc: RUNNING_XACTS nextXid1929 latestCompletedXid 1928 oldestRunningXid 1929
+bin> pg_waldump -s 0/102BEB10 -n 10 -p ~/pgdata/pg_wal
+rmgr: Heap        len (rec/tot):     59/    59, tx:       1608, lsn: 0/102BEB10, prev 0/102BE968, desc: INSERT+INIT off: 1, flags: 0x00, blkref #0: rel 1663/5/91165 blk 0
+rmgr: Transaction len (rec/tot):     34/    34, tx:       1608, lsn: 0/102BEB50, prev 0/102BEB10, desc: COMMIT 2026-07-15 21:15:04.305921 CST
+rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/102BEB78, prev 0/102BEB50, desc: RUNNING_XACTS nextXid 1609 latestCompletedXid 1608 oldestRunningXid 1609
 ```
 
 ## 延伸阅读
