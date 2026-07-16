@@ -2,11 +2,14 @@
 
 - Why: Process-based Model
 - What & Why: DSA (Dynamic Shared Memory Allocator)
+- How: Aux Processes (checkpointer / bgwriter / walwriter / autovacuum)
+- What: Shared Memory & ProcArray
 
 ## parser
 
 - How: Flex & Bison
 - How: Query Rewrite
+- How: RLS / View / Rule Rewrite
 
 ## analyzer
 
@@ -18,33 +21,44 @@
 - how: optimizer
 - how: Join Order
 - How: Path to Plan Conversion
+- How: Costing & Statistics (ANALYZE / pg_statistic)
+- How: Partition Pruning
 
 ## executor
 
 - How: Demand-Driven Pipeline
 - What & Why: TupleTableSlot
 - How: Materialize & Sort (Material Nodes)
+- How: Join Nodes (NestLoop / HashJoin / MergeJoin)
+- How: Agg / HashAgg / Window
 
 ## transaction
 
 - How: CLOG
 - Why: Non-overwrite MVCC
 - How: LWLock vs. SpinLock vs. Heavyweight Lock
+- What & Why: MultiXact
+- How: Subtrans / SAVEPOINT
+- Why & How: XID Wraparound & Freeze
+- How: SSI (Serializable / Predicate Lock)
+- How: Two-Phase Commit
 
 ## access
 
 - what: index types
 - why & how: nbtree
+- What: Table AM / Index AM API
+- How: HOT & Heap Prune
+- what & when: GIN or GiST or BRIN
 
 ## memory
 
 - how & why: Clock Sweep
 - how: Deadlock Detector
 - how: syscache
+- how: Relcache
 - how: cache invalidation
 - What: Double Buffering
-
-
 
 ## storage
 
@@ -53,32 +67,30 @@
 - what & when: Deduplication
 - why & how: VACUUM
 - Why & How: TOAST
-
-
+- How: Autovacuum
+- What: Data Checksums & Sync Method（对照 FPW）
 
 ## wal
 
-- How: WAL Record Structure & Insertion
-- why: Full Page Writes
+- How: WAL Record Structure & Insertion ✔
+- what & why & how: Full Page Writes ✔
+- What & Why: XLogRecPtr (LSN) ✔
+- What & Why: Mini-Transaction
 - How: Streaming Replication & Log Decoding
-- What & Why: Mini-Transaction (MTR)
-- XLogRecPtr (LSN)
-
-
+- What: Replication Slot & Timeline
+- How: Crash Recovery Redo Path
+- How: Base Backup（对照 runningBackups / FPW）
 
 ## others
 
 - how & when: Parallel Query
 - What & when & why: JIT Compilation
-
-
+- What: FDW / Extension Hooks（选修）
 
 ## distributed
 
 - [neon](https://github.com/neondatabase/neon)
 - [citus](https://github.com/citusdata/citus)
-
-
 
 ## blog
 
