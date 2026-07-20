@@ -48,6 +48,7 @@
         - [WAL Recovery](./backend/access/transam/09_wal_recovery.md)
         - [Full Page Writes](./backend/access/transam/10_full_page_writes.md)
         - [XLogRecPtr (LSN)](./backend/access/transam/11_xlogrecptr_lsn.md)
+        - [Mini-Transaction](./backend/access/transam/12_mini_transaction.md)
 - [storage](./backend/storage/storage.md)
     - [page](./backend/storage/page/page.md)
         - [Layout](./backend/storage/page/00_layout.md)

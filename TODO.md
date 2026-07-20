@@ -75,7 +75,7 @@
 - How: WAL Record Structure & Insertion ✔
 - what & why & how: Full Page Writes ✔
 - What & Why: XLogRecPtr (LSN) ✔
-- What & Why: Mini-Transaction
+- What & Why: Mini-Transaction ✔
 - How: Streaming Replication & Log Decoding
 - What: Replication Slot & Timeline
 - How: Crash Recovery Redo Path
