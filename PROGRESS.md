@@ -11,7 +11,7 @@
 
 | 模块 | 整体 | 一句话 |
 |------|------|--------|
-| **wal** | **掌握（核心四课）** | Record / FPW / LSN / MTR 已闭环；缺流复制 |
+| **wal** | **掌握（核心五课）** | Record / FPW / LSN / MTR / Crash Redo 已闭环；缺流复制与备份 |
 | **transaction** | **较好** | MVCC / 隔离 / 快照 / 可见性笔记较全；CLOG、锁分层待钉死 |
 | **storage** | **较好（局部）** | Page / Buffer 有深度；Heap 组织、VM/FSM、VACUUM、TOAST 缺口大 |
 | **access** | **入门～较好** | nbtree 有 page/plan/code；索引类型全景弱 |
@@ -22,7 +22,7 @@
 | **others / distributed** | **未开始** | Parallel / JIT / Neon / Citus |
 | **meta / traces** | **较好** | 编译启动 + INSERT/DELETE/UPDATE 链路，作实验锚点 |
 
-**当前主线建议**：先收尾 WAL（流复制），再补 storage 空洞与 transaction 锁/CLOG，最后才进 optimizer。
+**当前主线建议**：先收尾 WAL（Base Backup → 流复制），再补 storage 空洞与 transaction 锁/CLOG，最后才进 optimizer。
 
 ---
 
@@ -36,8 +36,9 @@
 | what & why & how: Full Page Writes ✔ | `transam/10_full_page_writes.md` | **掌握** | torn page、`page_lsn <= RedoRecPtr`、FPI/APPLY、备份强制 FPW | 自己跑出「checkpoint 后首次改页出现 FPI」实验 |
 | What & Why: XLogRecPtr (LSN) ✔ | `transam/11_xlogrecptr_lsn.md` | **掌握** | Insert/Write/Flush、`xl_prev`=上条 start、`pd_lsn`=EndRecPtr | 三级指针实验拉开差距；Redo 与 checkpoint.redo 对照 |
 | What & Why: Mini-Transaction ✔ | `transam/12_mini_transaction.md` | **较好** | atomic action、临界区序、与用户事务分层、incomplete split 边界 | 对着 `_bt_split` / `XLOG_BTREE_SPLIT` 跑一刀多页实验 |
+| How: Crash Recovery Redo Path ✔ | `transam/13_crash_recovery_redo.md` | **较好** | `StartupXLOG`/`PerformWalRecovery`、`rm_redo`、BLK_*、与 FPW/LSN 衔接 | 自己对照一次 kill -9 后日志里的 redo 起止 LSN |
 | How: Streaming Replication & Log Decoding | `09_wal_recovery.md`（HA 表） | **薄弱** | 故障域/恢复层级概念 | walsender/walreceiver、replay LSN、logical decoding 入口 |
-| （旁路）Recovery / Checkpoint | `09_wal_recovery.md`、overview 中 checkpoint | **入门** | RTO/RPO 分层、checkpoint 触发 | crash recovery 源码路径、restartpoint |
+| （旁路）Recovery / Checkpoint | `09_wal_recovery.md`、overview 中 checkpoint | **入门** | RTO/RPO 分层、checkpoint 触发 | restartpoint；与 crash redo 对照 |
 
 ### transaction
 
@@ -115,7 +116,7 @@
 ## 能力剖面（相对目标）
 
 ```text
-WAL 持久化主链     █████████████░░░  强（缺复制）
+WAL 持久化主链     ██████████████░░  强（缺复制/备份）
 事务 / MVCC        ████████░░░░░░░░  中上（缺 CLOG、锁对照）
 存储 / 页 / Buffer ███████░░░░░░░░░  中（缺 VACUUM/TOAST/VM）
 访问方法 nbtree    ██████░░░░░░░░░░  中（缺 split+WAL）
@@ -130,7 +131,8 @@ WAL 持久化主链     █████████████░░░  强（
 
 | 优先级 | 主题 | 原因 |
 |--------|------|------|
-| **P0** | Streaming Replication & Log Decoding | WAL 模块收尾；复制位点依赖 LSN |
+| **P0** | Base Backup | 对照 FPW / runningBackups；standby 起点 |
+| **P0** | Streaming Replication & Log Decoding | 接 crash redo；复制位点依赖 LSN |
 | **P1** | Heap + VM/FSM + VACUUM | 存储与 MVCC 收尾；否则「版本谁清理」悬空 |
 | **P1** | CLOG + 三种锁对照 | 事务模块 TODO 未闭合 |
 | **P2** | TupleTableSlot + Materialize/Sort | 执行器从「链路」进「算子」 |
@@ -229,8 +231,8 @@ WAL 持久化主链     █████████████░░░  强（
 ## 扩展后的学习路线图（建议阶段）
 
 ```text
-阶段 0  已做：INSERT 链路 · WAL Record · FPW · LSN · MTR
-阶段 1  WAL 收尾：流复制/Slot →（可选）Logical Decoding
+阶段 0  已做：INSERT 链路 · WAL Record · FPW · LSN · MTR · Crash Redo
+阶段 1  WAL 收尾：Base Backup → 流复制/Slot →（可选）Logical Decoding
 阶段 2  存储闭环：HeapAM/HOT → VM/FSM → VACUUM/freeze → TOAST
 阶段 3  事务钉死：CLOG · MultiXact · 三锁 ·（可选）SSI/2PC
 阶段 4  执行加深：Slot · Join 三算子 · Materialize/Sort · Agg
@@ -249,7 +251,8 @@ WAL 持久化主链     █████████████░░░  强（
 2. 为何 `page_lsn <= RedoRecPtr` 要拍 FPI，而不是「刚变脏」  
 3. Insert / Write / Flush 三级差在哪，COMMIT 推哪一级  
 4. 一次涉及多页的修改，为何需要 MTR / critical section；B-tree split 为何拆成多条 WAL
-5. （下一课）流复制位点与 Insert/Flush LSN 的关系  
+5. Startup 从 `CheckPoint.redo` 重放时，`BLK_DONE` / FPI APPLY 各在何时触发
+6. （下一课）Base Backup 与 `runningBackups` / FPW；再流复制位点
 
 ---
 

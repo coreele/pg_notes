@@ -49,6 +49,7 @@
         - [Full Page Writes](./backend/access/transam/10_full_page_writes.md)
         - [XLogRecPtr (LSN)](./backend/access/transam/11_xlogrecptr_lsn.md)
         - [Mini-Transaction](./backend/access/transam/12_mini_transaction.md)
+        - [Crash Recovery Redo Path](./backend/access/transam/13_crash_recovery_redo.md)
 - [storage](./backend/storage/storage.md)
     - [page](./backend/storage/page/page.md)
         - [Layout](./backend/storage/page/00_layout.md)

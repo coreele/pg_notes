@@ -76,10 +76,10 @@
 - what & why & how: Full Page Writes ✔
 - What & Why: XLogRecPtr (LSN) ✔
 - What & Why: Mini-Transaction ✔
+- How: Crash Recovery Redo Path ✔
+- How: Base Backup（对照 runningBackups / FPW）
 - How: Streaming Replication & Log Decoding
 - What: Replication Slot & Timeline
-- How: Crash Recovery Redo Path
-- How: Base Backup（对照 runningBackups / FPW）
 
 ## others
 
