@@ -123,6 +123,6 @@ SELECT * FROM pg_backup_stop(true);
 
 ---
 
-**相关笔记**: [Full Page Writes](./10_full_page_writes.md) · [Crash Recovery Redo](./13_crash_recovery_redo.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [WAL Recovery](./09_wal_recovery.md)
+**相关笔记**: [Full Page Writes](./10_full_page_writes.md) · [Crash Recovery Redo](./13_crash_recovery_redo.md) · [Streaming Replication & Log Decoding](./15_streaming_replication.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [WAL Recovery](./09_wal_recovery.md)
 
 **最后更新**: 2026-07-21 | **适用版本**: PostgreSQL 15.x / 16.x / devel

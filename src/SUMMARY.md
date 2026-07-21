@@ -52,6 +52,7 @@
         - [Mini-Transaction](./backend/access/transam/12_mini_transaction.md)
         - [Crash Recovery Redo Path](./backend/access/transam/13_crash_recovery_redo.md)
         - [Base Backup](./backend/access/transam/14_base_backup.md)
+        - [Streaming Replication & Log Decoding](./backend/access/transam/15_streaming_replication.md)
 - [storage](./backend/storage/storage.md)
     - [page](./backend/storage/page/page.md)
         - [Layout](./backend/storage/page/00_layout.md)

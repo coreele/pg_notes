@@ -197,6 +197,6 @@ Crash recovery 读到本地可提供的 WAL 末尾（通常受 Flush 边界约�
 
 ---
 
-**相关笔记**: [WAL Recovery（故障域）](./09_wal_recovery.md) · [Full Page Writes](./10_full_page_writes.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [Mini-Transaction](./12_mini_transaction.md) · [Base Backup](./14_base_backup.md) · [trace: crash recovery](../../../traces/04_crash_recovery.md)
+**相关笔记**: [WAL Recovery（故障域）](./09_wal_recovery.md) · [Full Page Writes](./10_full_page_writes.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [Mini-Transaction](./12_mini_transaction.md) · [Base Backup](./14_base_backup.md) · [Streaming Replication](./15_streaming_replication.md) · [trace: crash recovery](../../../traces/04_crash_recovery.md)
 
 **最后更新**: 2026-07-20 | **适用版本**: PostgreSQL 15.x / 16.x / devel

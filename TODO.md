@@ -78,7 +78,7 @@
 - What & Why: Mini-Transaction ✔
 - How: Crash Recovery Redo Path ✔
 - How: Base Backup ✔
-- How: Streaming Replication & Log Decoding
+- How: Streaming Replication & Log Decoding ✔
 - What: Replication Slot & Timeline
 
 ## others

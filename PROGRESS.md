@@ -38,7 +38,7 @@
 | What & Why: Mini-Transaction ✔ | `transam/12_mini_transaction.md` | **较好** | atomic action、临界区序、与用户事务分层、incomplete split 边界 | 对着 `_bt_split` / `XLOG_BTREE_SPLIT` 跑一刀多页实验 |
 | How: Crash Recovery Redo Path ✔ | `transam/13_crash_recovery_redo.md` | **较好** | `StartupXLOG`/`PerformWalRecovery`、`rm_redo`、BLK_*、与 FPW/LSN 衔接 | 自己对照一次 kill -9 后日志里的 redo 起止 LSN |
 | How: Base Backup ✔ | `transam/14_base_backup.md` | **入门** | `runningBackups` 强制 `doPageWrites`、与 FPW 对照、start/stop LSN | 跑一遍 `pg_basebackup` 并对 `backup_label` / waldump |
-| How: Streaming Replication & Log Decoding | `09_wal_recovery.md`（HA 表） | **薄弱** | 故障域/恢复层级概念 | walsender/walreceiver、replay LSN、logical decoding 入口 |
+| How: Streaming Replication & Log Decoding ✔ | `transam/15_streaming_replication.md` | **入门** | walsender/walreceiver、持续 `rm_redo`、逻辑解码 vs 物理 apply | 搭一主一备看 apply lag；对 slot get_changes 看一眼 |
 | （旁路）Recovery / Checkpoint | `09_wal_recovery.md`、overview 中 checkpoint | **入门** | RTO/RPO 分层、checkpoint 触发 | restartpoint；与 crash redo 对照 |
 
 ### transaction
