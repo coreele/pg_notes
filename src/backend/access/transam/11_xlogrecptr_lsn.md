@@ -47,12 +47,8 @@
 | ----------------------- | ---------------------------------------------------------------- |
 | `xl_prev`               | **上一条**记录的**开始位置**（`ReserveXLogInsertLocation` 写入） |
 | `XLogInsert()` 返回值   | **本条**记录的结束位置（`EndRecPtr`）                            |
-| `pg_waldump` 的 `lsn:`  | 本条记录的 **EndRecPtr**（记录结束 +1）                          |
+| `pg_waldump` 的 `lsn:`  | 本条记录的 **EndRecPtr**                                         |
 | `pg_waldump` 的 `prev:` | 本条 `xl_prev` = 上一条记录的 **start**                          |
-
-相邻记录字节连续时，上一条 `end` 常等于本条 `start`，但 `xl_prev` 仍存上一条 **start**，不是 end。
-
-`XLogReaderState`：`ReadRecPtr` = 本条 start，`EndRecPtr` = 本条 end+1（下一条可读位置）。
 
 ### 2.2 数据页上的 LSN（`page_lsn`）
 
