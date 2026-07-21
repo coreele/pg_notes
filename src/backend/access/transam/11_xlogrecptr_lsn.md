@@ -2,7 +2,7 @@
 
 ## What is LSN
 
-**LSN**（Log Sequence Number）在源码里就是 `**XLogRecPtr`**：`typedef uint64 XLogRecPtr`，表示 WAL **字节流上的位置**（当前时间线上的偏移）。
+**LSN**（Log Sequence Number）在源码里就是 `XLogRecPtr`：`typedef uint64 XLogRecPtr`，表示 WAL **字节流上的位置**（当前时间线上的偏移）。
 
 显示格式（`LSN_FORMAT_ARGS`）：
 
@@ -25,17 +25,15 @@
 
 ## 1. 关键文件与 API
 
-
-| 概念     | 源码 / SQL                                                                                        |
-| ------ | ----------------------------------------------------------------------------------------------- |
+| 概念       | 源码 / SQL                                                                                      |
+| ---------- | ----------------------------------------------------------------------------------------------- |
 | 类型定义   | `src/include/access/xlogdefs.h` — `XLogRecPtr`                                                  |
-| 记录头    | `src/include/access/xlogrecord.h` — `xl_prev`                                                   |
-| 页 LSN  | `src/include/storage/bufpage.h` — `pd_lsn` / `PageGetLSN` / `PageSetLSN`                        |
-| 插入返回值  | `src/backend/access/transam/xloginsert.c` — `XLogInsert` → `EndPos`                             |
+| 记录头     | `src/include/access/xlogrecord.h` — `xl_prev`                                                   |
+| 页 LSN     | `src/include/storage/bufpage.h` — `pd_lsn` / `PageGetLSN` / `PageSetLSN`                        |
+| 插入返回值 | `src/backend/access/transam/xloginsert.c` — `XLogInsert` → `EndPos`                             |
 | 恢复起点   | `src/include/catalog/pg_control.h` — `CheckPoint.redo`                                          |
 | 共享指针   | `src/backend/access/transam/xlog.c` — `GetRedoRecPtr` / `GetFlushRecPtr` / `GetXLogWriteRecPtr` |
-| SQL 观测 | `src/backend/access/transam/xlogfuncs.c` — `pg_current_wal_*`                                   |
-
+| SQL 观测   | `src/backend/access/transam/xlogfuncs.c` — `pg_current_wal_*`                                   |
 
 ---
 
@@ -45,14 +43,12 @@
 
 一条记录在字节流上占 `[start, end)`：
 
-
-| 字段 / 工具输出              | 含义                                                 |
-| ---------------------- | -------------------------------------------------- |
-| `xl_prev`              | **上一条**记录的**开始位置**（`ReserveXLogInsertLocation` 写入） |
-| `XLogInsert()` 返回值     | **本条**记录的结束位置（`EndRecPtr`）                         |
-| `pg_waldump` 的 `lsn:`  | 本条记录的 **EndRecPtr**（记录结束 +1）                       |
-| `pg_waldump` 的 `prev:` | 本条 `xl_prev` = 上一条记录的 **start**                    |
-
+| 字段 / 工具输出         | 含义                                                             |
+| ----------------------- | ---------------------------------------------------------------- |
+| `xl_prev`               | **上一条**记录的**开始位置**（`ReserveXLogInsertLocation` 写入） |
+| `XLogInsert()` 返回值   | **本条**记录的结束位置（`EndRecPtr`）                            |
+| `pg_waldump` 的 `lsn:`  | 本条记录的 **EndRecPtr**（记录结束 +1）                          |
+| `pg_waldump` 的 `prev:` | 本条 `xl_prev` = 上一条记录的 **start**                          |
 
 相邻记录字节连续时，上一条 `end` 常等于本条 `start`，但 `xl_prev` 仍存上一条 **start**，不是 end。
 
@@ -77,14 +73,12 @@ PageSetLSN(page, recptr);
 
 ### 2.3 系统级 LSN 指针
 
-
-| 指针         | 获取函数                    | 含义                                                           |
-| ---------- | ----------------------- | ------------------------------------------------------------ |
+| 指针       | 获取函数                | 含义                                                                           |
+| ---------- | ----------------------- | ------------------------------------------------------------------------------ |
 | **Insert** | `GetXLogInsertRecPtr()` | WAL 已保留到的位置（**end+1**，下一条从这里插）；`pg_current_wal_insert_lsn()` |
-| **Write**  | `GetXLogWriteRecPtr()`  | 已写入 OS 缓存；`pg_current_wal_lsn()`                             |
-| **Flush**  | `GetFlushRecPtr()`      | 已 `fsync` 到盘；`pg_current_wal_flush_lsn()`                    |
-| **Redo**   | `GetRedoRecPtr()`       | 当前 checkpoint 的恢复起点                                          |
-
+| **Write**  | `GetXLogWriteRecPtr()`  | 已写入 OS 缓存；`pg_current_wal_lsn()`                                         |
+| **Flush**  | `GetFlushRecPtr()`      | 已 `fsync` 到盘；`pg_current_wal_flush_lsn()`                                  |
+| **Redo**   | `GetRedoRecPtr()`       | 当前 checkpoint 的恢复起点                                                     |
 
 关系（正常主库，瞬时值可能有微小先后差）：
 
@@ -156,17 +150,15 @@ pg_waldump -s <insert_lsn> -n 3
 
 ## 6. 速查
 
-
-| 问题                                 | 答案                                             |
-| ---------------------------------- | ---------------------------------------------- |
-| LSN 是什么类型？                         | `uint64` 字节偏移                                  |
-| `xl_prev` 存什么？                     | 上一条记录的 **start**                               |
-| `page_lsn` / `pg_waldump lsn` 存什么？ | 本条 WAL 的 **end+1**（EndRecPtr）                  |
-| `pg_current_wal_insert_lsn` 是什么？   | 全局最新 **end+1**（下一条插入位置）                        |
-| 恢复从哪开始？                            | 最近 checkpoint 的 `redo` / `GetRedoRecPtr()`     |
-| `pg_current_wal_lsn` 是刷盘了吗？        | **否**，只到 Write；刷盘看 `pg_current_wal_flush_lsn`  |
-| 和事务提交的关系？                          | COMMIT 记录写入后 `XLogFlush`，把 Flush 推到 commit LSN |
-
+| 问题                                   | 答案                                                    |
+| -------------------------------------- | ------------------------------------------------------- |
+| LSN 是什么类型？                       | `uint64` 字节偏移                                       |
+| `xl_prev` 存什么？                     | 上一条记录的 **start**                                  |
+| `page_lsn` / `pg_waldump lsn` 存什么？ | 本条 WAL 的 **end+1**（EndRecPtr）                      |
+| `pg_current_wal_insert_lsn` 是什么？   | 全局最新 **end+1**（下一条插入位置）                    |
+| 恢复从哪开始？                         | 最近 checkpoint 的 `redo` / `GetRedoRecPtr()`           |
+| `pg_current_wal_lsn` 是刷盘了吗？      | **否**，只到 Write；刷盘看 `pg_current_wal_flush_lsn`   |
+| 和事务提交的关系？                     | COMMIT 记录写入后 `XLogFlush`，把 Flush 推到 commit LSN |
 
 ---
 

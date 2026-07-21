@@ -39,8 +39,6 @@ rdt = XLogRecordAssemble(rmid, info, RedoRecPtr, doPageWrites, ...);
 
 ---
 
-
-
 ## 2. Why：半写页为何致命
 
 WAL 正常路径：
@@ -57,7 +55,7 @@ WAL 正常路径：
 
 ```
 理想 8KB 页:  [AAAAAAAA][AAAAAAAA][AAAAAAAA][AAAAAAAA]
-半写后:        [BBBBBBBB][BBBBBBBB][AAAAAAAA][AAAAAAAA]   ← 新旧拼盘
+半写后:       [BBBBBBBB][BBBBBBBB][AAAAAAAA][AAAAAAAA]   ← 新旧拼盘
 ```
 
 此时：
@@ -71,8 +69,6 @@ WAL 正常路径：
 **FPW 的一句话回答 Why**：在页有机会被半写刷盘之前，先在 WAL 里留下一份完整「底片」；恢复时先整页覆盖，再（若有）应用后续增量。
 
 ---
-
-
 
 ## 3. When：何时拍整页映像
 
@@ -92,15 +88,13 @@ else
 }
 ```
 
-
-| 条件                       | `needs_backup` | 含义                                           |
-| ------------------------ | -------------- | -------------------------------------------- |
+| 条件                     | `needs_backup` | 含义                                                         |
+| ------------------------ | -------------- | ------------------------------------------------------------ |
 | `REGBUF_FORCE_IMAGE`     | true           | 调用方强制 FPI（大改页时差分不划算）                         |
-| `REGBUF_NO_IMAGE`        | false          | 明确不需要防半写（罕见）                                 |
-| `!doPageWrites`          | false          | `full_page_writes=off` 且无在线备份                |
+| `REGBUF_NO_IMAGE`        | false          | 明确不需要防半写（罕见）                                     |
+| `!doPageWrites`          | false          | `full_page_writes=off` 且无在线备份                          |
 | `page_lsn <= RedoRecPtr` | true           | 自上次 checkpoint redo 点以来尚未改过 → **首次修改，拍 FPI** |
-| `page_lsn > RedoRecPtr`  | false          | 本周期已拍过 / 已有更新 LSN → 只写增量                     |
-
+| `page_lsn > RedoRecPtr`  | false          | 本周期已拍过 / 已有更新 LSN → 只写增量                       |
 
 `doPageWrites` 定义（`xlog.c`）：
 
@@ -118,11 +112,7 @@ needs_data = !needs_backup;   /* 有整页映像则增量 buf data 可省 */
 
 ---
 
-
-
-## 4. How：映像如何进 WAL / 如何回放
-
-
+## 4. How：如何使用 image
 
 ### 4.1 写入侧
 
@@ -141,8 +131,6 @@ needs_data = !needs_backup;   /* 有整页映像则增量 buf data 可省 */
 [Full-Page Image 字节（可跳洞、可压缩）]
 [可选 Buffer Data | 仅 KEEP_DATA]
 ```
-
-
 
 ### 4.2 回放侧
 
@@ -164,22 +152,18 @@ else
 
 ### 4.3 与 `WILL_INIT` / `INSERT+INIT` 的关系
 
-`REGBUF_WILL_INIT` / `BKPBLOCK_WILL_INIT`：**不拍 FPI**，但 redo 必须用 `RBM_ZERO_`* 从零重建页。
+`REGBUF_WILL_INIT` / `BKPBLOCK_WILL_INIT`：**不拍 FPI**，但 redo 必须用 `RBM_ZERO_*` 从零重建页。
 
 空表首插的 `INSERT+INIT`（见 traces / L001）走的是「整页重建」路径，效果上同样避开「在半写旧页上套增量」——与 FPW 是两类互斥手段：
 
-
-| 手段              | 何时         | 基线从哪来         |
-| --------------- | ---------- | ------------- |
-| Full Page Image | 本周期首次改已有页  | WAL 里的整页底片    |
-| WILL_INIT       | 新建 / 重初始化页 | redo 清零后按记录重建 |
-
+| 手段            | 何时               | 基线从哪来            |
+| --------------- | ------------------ | --------------------- |
+| Full Page Image | 本周期首次改已有页 | WAL 里的整页底片      |
+| WILL_INIT       | 新建 / 重初始化页  | redo 清零后按记录重建 |
 
 ---
 
-
-
-## 5. 与 Hint Bits / Checksum 的边角
+## 5. 与 Hint Bits / Checksum 的边角(略)
 
 普通 hint bit 更新默认不记 WAL。但若开了 **data checksums** 或 `wal_log_hints`：
 
@@ -191,23 +175,17 @@ else
 
 ---
 
-
-
 ## 6. 性能与运维要点
 
-
-| 点                   | 说明                                                         |
-| ------------------- | ---------------------------------------------------------- |
-| WAL 膨胀              | 每个页每 checkpoint 周期最多一次 ~8KB 映像（可挖洞/压缩）                     |
-| 降低代价                | 拉长 `checkpoint_timeout` / `max_wal_size` → 单位时间 FPI 次数下降   |
-| 何时可关                | 文件系统保证无 partial page write（如部分 ZFS 场景）；风险类似关 `fsync`，需同等谨慎 |
-| 在线备份                | 备份期间强制 FPI                                                 |
-| 与 MySQL Doublewrite | 同为防半写；PG 把底片放进 WAL，不另建 doublewrite buffer                  |
-
+| 点                   | 说明                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| WAL 膨胀             | 每个页每 checkpoint 周期最多一次 ~8KB 映像（可挖洞/压缩）                            |
+| 降低代价             | 拉长 `checkpoint_timeout` / `max_wal_size` → 单位时间 FPI 次数下降                   |
+| 何时可关             | 文件系统保证无 partial page write（如部分 ZFS 场景）；风险类似关 `fsync`，需同等谨慎 |
+| 在线备份             | 备份期间强制 FPI                                                                     |
+| 与 MySQL Doublewrite | 同为防半写；PG 把底片放进 WAL，不另建 doublewrite buffer                             |
 
 ---
-
-
 
 ## 7. 判定速查
 
@@ -218,12 +196,10 @@ else
   ├─ REGBUF_NO_IMAGE         → 不拍
   ├─ !doPageWrites           → 不拍（配置关且无备份）
   └─ page_lsn <= RedoRecPtr  → 拍 FPI（本周期首次）
-       否则                  → 只写增量 BufData / MainData
+       else                  → 只写增量 BufData / MainData
 ```
 
 ---
-
-
 
 ## 8. 总结
 
