@@ -210,6 +210,6 @@ else
 
 ---
 
-**相关笔记**: [WAL Record 构造](../../../../temp/wal_record.md) · [WAL Recovery](./09_wal_recovery.md) · [insert 链路](../../../traces/01_insert.md)
+**相关笔记**: [WAL Record 构造](../../../../temp/wal_record.md) · [WAL Recovery](./09_wal_recovery.md) · [Base Backup / runningBackups](./14_base_backup.md) · [insert 链路](../../../traces/01_insert.md)
 
 **最后更新**: 2026-07-16 | **适用版本**: PostgreSQL 15.x / 16.x / devel

@@ -77,7 +77,7 @@
 - What & Why: XLogRecPtr (LSN) ✔
 - What & Why: Mini-Transaction ✔
 - How: Crash Recovery Redo Path ✔
-- How: Base Backup（对照 runningBackups / FPW）
+- How: Base Backup ✔
 - How: Streaming Replication & Log Decoding
 - What: Replication Slot & Timeline
 
