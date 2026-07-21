@@ -43,12 +43,12 @@
 
 一条记录在字节流上占 `[start, end)`：
 
-| 字段 / 工具输出         | 含义                                                             |
-| ----------------------- | ---------------------------------------------------------------- |
-| `xl_prev`               | **上一条**记录的**开始位置**（`ReserveXLogInsertLocation` 写入） |
-| `XLogInsert()` 返回值   | **本条**记录的结束位置（`EndRecPtr`）                            |
-| `pg_waldump` 的 `lsn:`  | 本条记录的 **EndRecPtr**                                         |
-| `pg_waldump` 的 `prev:` | 本条 `xl_prev` = 上一条记录的 **start**                          |
+| 字段 / 工具输出              | 含义                                                 |
+| ---------------------- | -------------------------------------------------- |
+| `xl_prev`              | **上一条**记录的**开始位置**（`ReserveXLogInsertLocation` 写入） |
+| `XLogInsert()` 返回值     | **本条**记录的结束位置（`EndRecPtr`）                         |
+| `pg_waldump` 的 `lsn:`  | 本条记录的 **EndRecPtr**                                |
+| `pg_waldump` 的 `prev:` | 本条 `xl_prev` = 上一条记录的 **start**                    |
 
 ### 2.2 数据页上的 LSN（`page_lsn`）
 
@@ -86,7 +86,7 @@ Insert LSN  ≥  Write LSN  ≥  Flush LSN
 
 `COMMIT` 时 `XLogFlush(commit_lsn)` 推进 **Flush**，保证已提交事务的 WAL 可崩溃恢复。
 
-`**RedoRecPtr**`（`CheckPoint.redo`）：最近一次 checkpoint **开始时**记下的「下一条可用 LSN」；崩溃恢复从此重放。也是 FPW 里 `page_lsn <= RedoRecPtr` 的参照点（见 [Full Page Writes](./10_full_page_writes.md)）。
+`RedoRecPtr`（`CheckPoint.redo`）：最近一次 checkpoint **开始时**记下的「下一条可用 LSN」；崩溃恢复从此重放。也是 FPW 里 `page_lsn <= RedoRecPtr` 的参照点（见 [Full Page Writes](./10_full_page_writes.md)）。
 
 ---
 
