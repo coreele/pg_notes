@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# Format staged Markdown with Prettier before commit.
+set -e
+cd "$(dirname "$0")/.." || exit 1
+
+if [ ! -x node_modules/.bin/prettier ]; then
+  echo "pre-commit: prettier missing. Run: npm install" >&2
+  exit 1
+fi
+
+# NUL-delimited so paths with spaces stay intact
+git diff --cached --name-only --diff-filter=ACM -z -- '*.md' |
+  while IFS= read -r -d '' file; do
+    node_modules/.bin/prettier --write -- "$file"
+    git add -- "$file"
+  done

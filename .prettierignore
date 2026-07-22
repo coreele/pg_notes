@@ -1,0 +1,5 @@
+node_modules/
+book/
+pg_covers/
+**/*.excalidraw.md
+**/assets/**/*.md

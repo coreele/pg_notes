@@ -6,8 +6,9 @@
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
 
-# Shell scripts
+# Shell / git hooks — always LF
 *.sh text eol=lf
+.githooks/** text eol=lf
 
 # Binary — do not touch
 *.{png,jpg,jpeg,gif,webp,ico,svg,pdf,zip,gz,mp4,woff,woff2,ttf,eot} binary

@@ -77,7 +77,6 @@ dist/
 # Node.js (for reveal-md & slidev)
 node_modules/
 yarn.lock
-package-lock.json
 dist/
 .cache/
 .slidev/
