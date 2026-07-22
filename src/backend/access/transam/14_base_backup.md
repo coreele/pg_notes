@@ -1,6 +1,6 @@
 # How: Base Backup
 
-## What & Why
+## 1. What & Why
 
 Base backup：在线拷贝数据目录（及表空间），再配上备份窗口内的 WAL，恢复时靠 redo（含 FPI）把「不一致的文件拷贝」推到一致点。
 
@@ -14,7 +14,7 @@ Base backup：在线拷贝数据目录（及表空间），再配上备份窗口
 
 ---
 
-## 核心设计思想
+## 2. 核心设计思想
 
 
 |        | Crash recovery（`full_page_writes`）                     | Base backup（`runningBackups`）   |
@@ -36,7 +36,7 @@ doPageWrites = (Insert->fullPageWrites || Insert->runningBackups > 0);
 
 ---
 
-## 关键文件与 API
+## 3. 关键文件与 API
 
 
 | 概念        | 源码 / 入口                                                                                         |
@@ -52,7 +52,7 @@ doPageWrites = (Insert->fullPageWrites || Insert->runningBackups > 0);
 
 ---
 
-## 时序
+## 4. 时序
 
 ```text
 pg_backup_start / BASE_BACKUP start
@@ -73,7 +73,7 @@ restore:
 
 ---
 
-## 与 FPW 判定的衔接
+## 5. 与 FPW 判定的衔接
 
 备份进行中 `doPageWrites == true`，之后与平常 FPW 相同：
 
@@ -94,7 +94,7 @@ needs_backup = (PageGetLSN(page) <= RedoRecPtr);  /* 本周期首次修改 */
 
 ---
 
-## 运维对应（最小）
+## 6. 运维对应（最小）
 
 ```sql
 SELECT pg_backup_start('label', false);
@@ -108,7 +108,7 @@ SELECT * FROM pg_backup_stop(true);
 
 ---
 
-## 速查
+## 7. 速查
 
 
 | 问题                    | 答案                                           |

@@ -1,6 +1,6 @@
 # How: Crash Recovery Redo Path
 
-## What is Crash Recovery Redo
+## 1. What is Crash Recovery Redo
 
 Crash recovery：实例非正常退出后，Startup 进程从最近一次 checkpoint 记下的 `CheckPoint.redo` 起，按序重放 WAL，直到本地 WAL 末尾（已 flush 的部分），把数据文件推回与 WAL 一致的状态。
 
@@ -8,7 +8,7 @@ Crash recovery：实例非正常退出后，Startup 进程从最近一次 checkp
 
 ---
 
-## 核心设计思想
+## 2. 核心设计思想
 
 - 问题：共享缓冲在进程死后作废；数据文件上的脏页可能未刷完，且可能停在任意 LSN。仅靠数据文件无法知道「缺了哪些已持久化的修改」。
 - 解法：持久真相在已 flush 的 WAL。从 `redo` 点顺序 `rm_redo`；页上 `pd_lsn` 决定跳过或应用；有 FPI 则先整页覆盖。
@@ -16,7 +16,7 @@ Crash recovery：实例非正常退出后，Startup 进程从最近一次 checkp
 
 ---
 
-## 1. 关键文件与 API
+## 3. 关键文件与 API
 
 
 | 概念                 | 源码                                                                         |
@@ -44,7 +44,7 @@ Crash recovery：实例非正常退出后，Startup 进程从最近一次 checkp
 
 
 
-## 2. 为何从 `redo` 起、而非从「上次刷脏」起
+## 4. 为何从 `redo` 起、而非从「上次刷脏」起
 
 Checkpoint 并不保证「redo 点之后的脏页都已落盘」；它保证的是：
 
@@ -66,7 +66,7 @@ replay:      apply that WAL range onto data files
 
 
 
-## 3. 启动到恢复结束的时序
+## 5. 启动到恢复结束的时序
 
 ```text
 postmaster
@@ -106,7 +106,7 @@ RmgrTable[rmid].rm_redo(record)
 
 
 
-## 4. 单页：何时跳过、何时套增量、何时整页覆盖
+## 6. 单页：何时跳过、何时套增量、何时整页覆盖
 
 `XLogReadBufferForRedoExtended`（与 [Full Page Writes](./10_full_page_writes.md)、[LSN](./11_xlogrecptr_lsn.md) 对照）：
 
@@ -136,7 +136,7 @@ BLK_NEEDS_REDO -> rm_redo incremental apply
 
 
 
-## 5. 与用户事务、可见性的关系
+## 7. 与用户事务、可见性的关系
 
 
 | 现象                                           | 解释                                   |
@@ -153,7 +153,7 @@ Crash recovery **不做**传统 undo 日志回滚堆元组；中止未完成事�
 
 
 
-## 6. 结束条件与后续
+## 8. 结束条件与后续
 
 Crash recovery 读到本地可提供的 WAL 末尾（通常受 Flush 边界约束）后结束，并做 **end-of-recovery checkpoint**，推进控制文件中的一致点，然后才允许普通后端进入。
 
@@ -171,7 +171,7 @@ Crash recovery 读到本地可提供的 WAL 末尾（通常受 Flush 边界约�
 
 
 
-## 7. 速查
+## 9. 速查
 
 
 | 问题           | 答案                                              |
@@ -188,7 +188,7 @@ Crash recovery 读到本地可提供的 WAL 末尾（通常受 Flush 边界约�
 
 
 
-## 8. 总结
+## 10. 总结
 
 1. What：从 `CheckPoint.redo` 顺序重放已 flush WAL，经各 `rm_redo` 把数据文件补到与 WAL 一致。
 2. Why：崩溃后共享缓冲与未刷脏页不可信；可依赖的是 WAL + 页 LSN / FPI。

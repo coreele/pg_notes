@@ -1,6 +1,6 @@
 # How: Streaming Replication & Log Decoding
 
-## What & Why
+## 1. What & Why
 
 两条把 WAL「送出去」的路径，消费方式不同：
 
@@ -17,9 +17,9 @@
 
 ---
 
-## 核心设计思想
+## 2. 核心设计思想
 
-### 物理流复制
+### 2.1 物理流复制
 
 ```text
 primary                          standby
@@ -40,7 +40,7 @@ primary                          standby
 
 一句话：流复制 = 「永不结束的 crash redo」，WAL 由网络持续供给，而不是只读本地文件到 EOF。
 
-### 逻辑解码
+### 2.2 逻辑解码
 
 ```text
 WAL (physical records)
@@ -58,7 +58,7 @@ WAL (physical records)
 
 ---
 
-## 关键文件与 API
+## 3. 关键文件与 API
 
 | 概念 | 源码 / 入口 |
 |------|-------------|
@@ -74,7 +74,7 @@ WAL (physical records)
 
 ---
 
-## 时序：物理流复制
+## 4. 时序：物理流复制
 
 ```text
 1. standby = base backup (+ backup_label) of primary
@@ -102,7 +102,7 @@ Lag ≈ 主库 flush LSN − 备库 apply LSN（还受网络与 redo 速度影�
 
 ---
 
-## 时序：逻辑解码（最小）
+## 5. 时序：逻辑解码（最小）
 
 ```text
 create logical slot  (pin WAL from restart_lsn)
@@ -118,7 +118,7 @@ advance slot confirmed_flush
 
 ---
 
-## 与 crash redo / base backup 的衔接
+## 6. 与 crash redo / base backup 的衔接
 
 | 机制 | 角色 |
 |------|------|
@@ -131,7 +131,7 @@ advance slot confirmed_flush
 
 ---
 
-## 易混点
+## 7. 易混点
 
 | 说法 | 澄清 |
 |------|------|
@@ -142,7 +142,7 @@ advance slot confirmed_flush
 
 ---
 
-## 速查
+## 8. 速查
 
 | 问题 | 答案 |
 |------|------|

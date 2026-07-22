@@ -1,6 +1,6 @@
 # What & Why: XLogRecPtr (LSN)
 
-## What is LSN
+## 1. What is LSN
 
 **LSN**（Log Sequence Number）在源码里就是 `XLogRecPtr`：`typedef uint64 XLogRecPtr`，表示 WAL **字节流上的位置**（当前时间线上的偏移）。
 
@@ -14,7 +14,7 @@
 
 ---
 
-## 核心设计思想
+## 2. 核心设计思想
 
 - **统一坐标**：WAL 记录、数据页、checkpoint、复制、PITR 都用同一套 LSN 刻度
 - **记录链**：每条 WAL 的 `xl_prev` 指向上一条的 **start**，顺序回放时校验链接
@@ -23,7 +23,7 @@
 
 ---
 
-## 1. 关键文件与 API
+## 3. 关键文件与 API
 
 | 概念       | 源码 / SQL                                                                                      |
 | ---------- | ----------------------------------------------------------------------------------------------- |
@@ -37,9 +37,9 @@
 
 ---
 
-## 2. 三种 LSN 角色（先分清）
+## 4. 三种 LSN 角色（先分清）
 
-### 2.1 WAL 记录上的 LSN
+### 4.1 WAL 记录上的 LSN
 
 一条记录在字节流上占 `[start, end)`：
 
@@ -50,7 +50,7 @@
 | `pg_waldump` 的 `lsn:`  | 本条记录的 **EndRecPtr**                                |
 | `pg_waldump` 的 `prev:` | 本条 `xl_prev` = 上一条记录的 **start**                    |
 
-### 2.2 数据页上的 LSN（`page_lsn`）
+### 4.2 数据页上的 LSN（`page_lsn`）
 
 页头 `pd_lsn` 注释（`bufpage.h`）：
 
@@ -67,7 +67,7 @@ PageSetLSN(page, recptr);
 
 `pageinspect` 里 `page_header.lsn` 应与对应 Heap WAL 记录的 `lsn` 一致（见 `01_insert.md` 实验）。
 
-### 2.3 系统级 LSN 指针
+### 4.3 系统级 LSN 指针
 
 | 指针       | 获取函数                | 含义                                                                           |
 | ---------- | ----------------------- | ------------------------------------------------------------------------------ |
@@ -90,9 +90,9 @@ Insert LSN  ≥  Write LSN  ≥  Flush LSN
 
 ---
 
-## 3. 比较语义
+## 5. 比较语义
 
-### 3.1 Redo 跳过
+### 5.1 Redo 跳过
 
 `XLogReadBufferForRedoExtended`（`xlogutils.c`）：
 
@@ -104,7 +104,7 @@ if (lsn <= PageGetLSN(page))
 
 页上 LSN 是「已应用到的 WAL 位置」；当前记录结束位置不比页新 → 不必再 redo。
 
-### 3.2 FPW 首次修改
+### 5.2 FPW 首次修改
 
 ```c
 needs_backup = (PageGetLSN(page) <= RedoRecPtr);
@@ -114,13 +114,13 @@ needs_backup = (PageGetLSN(page) <= RedoRecPtr);
 
 ---
 
-## 4. 物理落点（简图）
+## 6. 物理落点（简图）
 
 WAL 按 **segment 文件**（`pg_wal/000000010000000000000001`）顺序追加；segment 内再按 **XLOG 页**（通常 8KB）切分。`XLogRecPtr` 是跨 segment 的全局字节偏移，`XLByteToSeg` 等宏负责换算文件名与段内偏移。
 
 ---
 
-## 5. 实验（与 INSERT trace 衔接）
+## 7. 实验（与 INSERT trace 衔接）
 
 ```sql
 SELECT pg_current_wal_insert_lsn() AS insert_lsn,
@@ -144,7 +144,7 @@ pg_waldump -s <insert_lsn> -n 3
 
 ---
 
-## 6. 速查
+## 8. 速查
 
 | 问题                                   | 答案                                                    |
 | -------------------------------------- | ------------------------------------------------------- |
@@ -158,7 +158,7 @@ pg_waldump -s <insert_lsn> -n 3
 
 ---
 
-## 7. 总结
+## 9. 总结
 
 1. **What**：`XLogRecPtr` = WAL 上的 64 位位置；对外常叫 LSN。
 2. **Why**：同一刻度串联 WAL 链、页版本、恢复起点与复制位点。

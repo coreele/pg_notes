@@ -1,6 +1,6 @@
 # Why: Full Page Writes
 
-## What is FPW
+## 1. What is FPW
 
 **Full Page Writes（FPW）**：在增量 WAL 之外，条件满足时把整张数据页（通常 8KB）写入 WAL。这份拷贝称 **Full Page Image（FPI）** / backup block。
 
@@ -11,7 +11,7 @@
 
 ---
 
-## 核心设计思想
+## 2. 核心设计思想
 
 - **问题**：页 8KB、扇区常 512B，崩溃可能留下新旧拼盘的半写页（torn page）；8KB ÷ 512B = **16 次扇区写（物理原子写）**
 - **解法**：每个 checkpoint 周期内，页的**首次**修改附带 FPI(page 全量)，之后只记增量
@@ -19,7 +19,7 @@
 
 ---
 
-## 1. 关键文件与 API
+## 3. 关键文件与 API
 
 **源代码**:
 
@@ -39,7 +39,7 @@ rdt = XLogRecordAssemble(rmid, info, RedoRecPtr, doPageWrites, ...);
 
 ---
 
-## 2. Why：半写页为何致命
+## 4. Why：半写页为何致命
 
 WAL 正常路径：
 
@@ -70,7 +70,7 @@ WAL 正常路径：
 
 ---
 
-## 3. When：何时拍整页映像
+## 5. When：何时拍整页映像
 
 决策在 `XLogRecordAssemble`（`xloginsert.c`）：
 
@@ -112,9 +112,9 @@ needs_data = !needs_backup;   /* 有整页映像则增量 buf data 可省 */
 
 ---
 
-## 4. How：如何使用 image
+## 6. How：如何使用 image
 
-### 4.1 写入侧
+### 6.1 写入侧
 
 `include_image = needs_backup || (info & XLR_CHECK_CONSISTENCY)`：
 
@@ -132,7 +132,7 @@ needs_data = !needs_backup;   /* 有整页映像则增量 buf data 可省 */
 [可选 Buffer Data | 仅 KEEP_DATA]
 ```
 
-### 4.2 回放侧
+### 6.2 回放侧
 
 `XLogReadBufferForRedoExtended`：
 
@@ -150,7 +150,7 @@ else
 
 崩溃恢复时：若磁盘页已半写，FPI 直接盖掉；若页完好且 LSN 已够新，跳过。
 
-### 4.3 与 `WILL_INIT` / `INSERT+INIT` 的关系
+### 6.3 与 `WILL_INIT` / `INSERT+INIT` 的关系
 
 `REGBUF_WILL_INIT` / `BKPBLOCK_WILL_INIT`：**不拍 FPI**，但 redo 必须用 `RBM_ZERO_*` 从零重建页。
 
@@ -163,7 +163,7 @@ else
 
 ---
 
-## 5. 与 Hint Bits / Checksum 的边角(略)
+## 7. 与 Hint Bits / Checksum 的边角(略)
 
 普通 hint bit 更新默认不记 WAL。但若开了 **data checksums** 或 `wal_log_hints`：
 
@@ -175,7 +175,7 @@ else
 
 ---
 
-## 6. 性能与运维要点
+## 8. 性能与运维要点
 
 | 点                   | 说明                                                                                 |
 | -------------------- | ------------------------------------------------------------------------------------ |
@@ -187,7 +187,7 @@ else
 
 ---
 
-## 7. 判定速查
+## 9. 判定速查
 
 ```
 改页且要写 WAL？
@@ -201,7 +201,7 @@ else
 
 ---
 
-## 8. 总结
+## 10. 总结
 
 1. **Why**：8KB 页可能半写；增量 WAL 不能在「拼盘页」上安全 redo。
 2. **What**：checkpoint 后每页第一次修改附带 Full Page Image。
