@@ -100,4 +100,3 @@
 - **ClickHouse** —— 学现代列存实现和高性能执行器。
 - **StarRocks 或 Apache Doris**：学习现代 MPP OLAP（分布式执行、Shuffle、Pipeline）。
 - **Snowflake/BigQuery**：了解云原生分析数据库的计算存储分离架构。
-

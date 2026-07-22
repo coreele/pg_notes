@@ -238,7 +238,7 @@ CREATE TABLE tb(a int);
 \set AUTOCOMMIT off
 
 SELECT pg_current_wal_insert_lsn() AS lsn_before;
- lsn_before 
+ lsn_before
 ------------
  0/102BEB10
 (1 row)
@@ -246,13 +246,13 @@ SELECT pg_current_wal_insert_lsn() AS lsn_before;
 INSERT INTO tb VALUES (1);
 
 SELECT pg_current_wal_insert_lsn() AS lsn_after;   -- INSERT 后 lsn 已前进
- lsn_after  
+ lsn_after
 ------------
  0/102BEB50
 (1 row)
 
 SELECT lsn FROM page_header(get_raw_page('tb', 0)); -- 页 lsn 对应 heap WAL
-    lsn     
+    lsn
 ------------
  0/102BEB50
 (1 row)

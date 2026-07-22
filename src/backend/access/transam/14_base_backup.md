@@ -16,14 +16,12 @@ Base backup：在线拷贝数据目录（及表空间），再配上备份窗口
 
 ## 2. 核心设计思想
 
-
-|        | Crash recovery（`full_page_writes`）                     | Base backup（`runningBackups`）   |
-| ------ | ------------------------------------------------------ | ------------------------------- |
-| 触发     | GUC；按 checkpoint 周期 `page_lsn <= RedoRecPtr` 首次改页拍 FPI | 备份进行中强制 `doPageWrites`          |
-| 保护对象   | 本机数据文件 + 本地 WAL                                        | 备份副本中的页 + 备份窗口 WAL              |
-| 关闭 GUC | `full_page_writes=off` 可关（有风险）                         | `runningBackups > 0` 时仍必须拍 FPI  |
-| 恢复入口   | Startup crash redo                                     | 恢复簇 + `backup_label` 指引的 WAL 区间 |
-
+|          | Crash recovery（`full_page_writes`）                            | Base backup（`runningBackups`）         |
+| -------- | --------------------------------------------------------------- | --------------------------------------- |
+| 触发     | GUC；按 checkpoint 周期 `page_lsn <= RedoRecPtr` 首次改页拍 FPI | 备份进行中强制 `doPageWrites`           |
+| 保护对象 | 本机数据文件 + 本地 WAL                                         | 备份副本中的页 + 备份窗口 WAL           |
+| 关闭 GUC | `full_page_writes=off` 可关（有风险）                           | `runningBackups > 0` 时仍必须拍 FPI     |
+| 恢复入口 | Startup crash redo                                              | 恢复簇 + `backup_label` 指引的 WAL 区间 |
 
 `doPageWrites`（写入侧本地缓存，权威在 `XLogCtl->Insert`）：
 
@@ -38,15 +36,13 @@ doPageWrites = (Insert->fullPageWrites || Insert->runningBackups > 0);
 
 ## 3. 关键文件与 API
 
-
-| 概念        | 源码 / 入口                                                                                         |
-| --------- | ----------------------------------------------------------------------------------------------- |
+| 概念            | 源码 / 入口                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------------- |
 | 备份开始 / 结束 | `xlog.c` — `do_pg_backup_start` / `do_pg_backup_stop`（SQL：`pg_backup_start` / `pg_backup_stop`） |
-| 计数器       | `XLogCtl->Insert.runningBackups`；`lastBackupStart`                                              |
-| 组装是否拍 FPI | `GetFullPageWriteInfo` → `XLogRecordAssemble` / `XLogCheckBufferNeedsBackup`（同 FPW）             |
-| 复制协议拷贝    | `backup/basebackup*.c`；客户端 `pg_basebackup`                                                      |
-| 恢复元数据     | 数据目录内 `backup_label`（及 `tablespace_map`）                                                        |
-
+| 计数器          | `XLogCtl->Insert.runningBackups`；`lastBackupStart`                                                |
+| 组装是否拍 FPI  | `GetFullPageWriteInfo` → `XLogRecordAssemble` / `XLogCheckBufferNeedsBackup`（同 FPW）             |
+| 复制协议拷贝    | `backup/basebackup*.c`；客户端 `pg_basebackup`                                                     |
+| 恢复元数据      | 数据目录内 `backup_label`（及 `tablespace_map`）                                                   |
 
 非独占备份（现行默认路径）：不写 exclusive lock 文件挡其它备份；可与 `pg_basebackup` 并发会话，每个会话 `runningBackups++`。
 
@@ -81,14 +77,12 @@ restore:
 needs_backup = (PageGetLSN(page) <= RedoRecPtr);  /* 本周期首次修改 */
 ```
 
-
-| 现象                            | 解释                                            |
-| ----------------------------- | --------------------------------------------- |
-| 备份期间 WAL 变胖                   | `runningBackups > 0` 强制 page writes；首次改页带 FPI |
-| `full_page_writes=off` 仍见 FPI | 有未结束的 `pg_backup_*` / `pg_basebackup`         |
-| 只拷文件、不留 WAL                   | 无法恢复到一致；缺 start～stop 的 WAL 会失败或损坏             |
-| 与 crash redo 共用 `rm_redo`     | 恢复路径同一套；差别在是否有 `backup_label` / 恢复目标          |
-
+| 现象                            | 解释                                                   |
+| ------------------------------- | ------------------------------------------------------ |
+| 备份期间 WAL 变胖               | `runningBackups > 0` 强制 page writes；首次改页带 FPI  |
+| `full_page_writes=off` 仍见 FPI | 有未结束的 `pg_backup_*` / `pg_basebackup`             |
+| 只拷文件、不留 WAL              | 无法恢复到一致；缺 start～stop 的 WAL 会失败或损坏     |
+| 与 crash redo 共用 `rm_redo`    | 恢复路径同一套；差别在是否有 `backup_label` / 恢复目标 |
 
 `RedoRecPtr` 仍随 checkpoint 推进；备份不会改成「另一套 FPW 算法」，只是把 `doPageWrites` 钉死为开。
 
@@ -110,16 +104,14 @@ SELECT * FROM pg_backup_stop(true);
 
 ## 7. 速查
 
-
-| 问题                    | 答案                                           |
-| --------------------- | -------------------------------------------- |
-| base backup 解决什么？     | 跨文件时间错位 + 并发拷写时的半写；用 WAL+FPI 推齐              |
-| 稳定旧页纯拷会半写吗？           | 不会；半写要有对该页的并发写                               |
-| `runningBackups` 干什么？ | 计数在线备份；>0 则强制 `doPageWrites`                 |
-| 和 `full_page_writes`？ | 或关系：GUC 开 **或** 备份中，都要拍 FPI                  |
-| 为何对照 FPW？             | 同一套 `needs_backup` / FPI；动机从「本机半写」扩到「备份副本半写」 |
-| 本稿不含？                 | 流复制位点持续 apply、slot、增量 base backup 报文细节       |
-
+| 问题                      | 答案                                                                |
+| ------------------------- | ------------------------------------------------------------------- |
+| base backup 解决什么？    | 跨文件时间错位 + 并发拷写时的半写；用 WAL+FPI 推齐                  |
+| 稳定旧页纯拷会半写吗？    | 不会；半写要有对该页的并发写                                        |
+| `runningBackups` 干什么？ | 计数在线备份；>0 则强制 `doPageWrites`                              |
+| 和 `full_page_writes`？   | 或关系：GUC 开 **或** 备份中，都要拍 FPI                            |
+| 为何对照 FPW？            | 同一套 `needs_backup` / FPI；动机从「本机半写」扩到「备份副本半写」 |
+| 本稿不含？                | 流复制位点持续 apply、slot、增量 base backup 报文细节               |
 
 ---
 

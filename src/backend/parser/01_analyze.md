@@ -55,7 +55,7 @@ typedef struct Query
 } Query;
 ```
 
-______________________________________________________________________
+---
 
 ### 查询分类
 
@@ -78,12 +78,12 @@ select a, b FROM tb where a = 2;
 
 ### 对象层级关系
 
-| 层级 | 中文名称 | 核心作用 | 唯一标识 | 关联系统表 |
+| 层级         | 中文名称        | 核心作用                           | 唯一标识        | 关联系统表     |
 | ------------ | --------------- | ---------------------------------- | --------------- | -------------- |
-| Database | 数据库 | 最高级隔离单元（独立的系统表集合） | `OID` | `pg_database` |
-| Schema | 模式 / 名称空间 | 数据库内的逻辑隔离单元 | `OID` | `pg_namespace` |
-| **Relation** | 关系 | 模式内的核心对象（表/索引/视图等） | `OID` | `pg_class` |
-| Column | 字段 | 关系内的最小数据单元 | `OID`+`attrnum` | `pg_attribute` |
+| Database     | 数据库          | 最高级隔离单元（独立的系统表集合） | `OID`           | `pg_database`  |
+| Schema       | 模式 / 名称空间 | 数据库内的逻辑隔离单元             | `OID`           | `pg_namespace` |
+| **Relation** | 关系            | 模式内的核心对象（表/索引/视图等） | `OID`           | `pg_class`     |
+| Column       | 字段            | 关系内的最小数据单元               | `OID`+`attrnum` | `pg_attribute` |
 
 参考文档：
 
@@ -275,10 +275,10 @@ RangeVarGetRelidExtended
 
 在 PostgreSQL 中，这两种方式分别对应 **“投影别名”** 和 **“数据源别名”**。
 
-| 方式 | 语法示例 | 生效阶段 | 核心作用 |
+| 方式           | 语法示例             | 生效阶段            | 核心作用                     |
 | -------------- | -------------------- | ------------------- | ---------------------------- |
-| **投影别名** | `select a AS x ...` | **输出层** (Output) | **修饰性**：重命名输出列 |
-| **数据源别名** | `FROM tb AS t(x, y)` | **输入层** (Input) | **结构性**：重定义表结构标识 |
+| **投影别名**   | `select a AS x ...`  | **输出层** (Output) | **修饰性**：重命名输出列     |
+| **数据源别名** | `FROM tb AS t(x, y)` | **输入层** (Input)  | **结构性**：重定义表结构标识 |
 
 ### 为什么需要数据源别名?
 
@@ -362,7 +362,7 @@ transformWhereClause
 				result->opno = oprid(tup); /* pg_operator: oid=96 | oprname='=' | oprcode='int4eq' */
 				result->opfuncid = opform->oprcode; /*op_proc: oid=65 | proname='int4eq' */
 				result->args = args
-				
+
 qry->jointree = makeFromExpr(pstate->p_joinlist, qual);
 ```
 

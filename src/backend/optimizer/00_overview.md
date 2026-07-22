@@ -18,12 +18,12 @@ FROM -> WHERE -> GROUP BY -> HAVING -> SELECT -> DISTINCT -> ORDER BY -> LIMIT
 
 逻辑层只决定 **“要做什么”** ，而物理层（Planner 之后）决定 **“具体怎么做”**。
 
-| 逻辑算子 (What) | 物理算子示例 (How) |
-| --- | --- |
-| **扫描 (Scan)** | `SeqScan`, `IndexScan`, `BitmapHeapScan` |
-| **连接 (Join)** | `NestLoop`, `HashJoin`, `MergeJoin` |
-| **聚合 (Agg)** | `HashAggregate` (哈希), `GroupAggregate` (排序后分组) |
-| **去重 (Distinct)** | `Unique` (排序去重), `HashAggregate` (哈希去重) |
+| 逻辑算子 (What)     | 物理算子示例 (How)                                    |
+| ------------------- | ----------------------------------------------------- |
+| **扫描 (Scan)**     | `SeqScan`, `IndexScan`, `BitmapHeapScan`              |
+| **连接 (Join)**     | `NestLoop`, `HashJoin`, `MergeJoin`                   |
+| **聚合 (Agg)**      | `HashAggregate` (哈希), `GroupAggregate` (排序后分组) |
+| **去重 (Distinct)** | `Unique` (排序去重), `HashAggregate` (哈希去重)       |
 
 - 逻辑算子定意图
 - 物理算子定实现
@@ -42,6 +42,6 @@ pg_plan_queries
 				/* Select best Path and turn it into a Plan */
 				final_rel = fetch_upper_rel(root, UPPERREL_FINAL, NULL);
 				best_path = get_cheapest_fractional_path(final_rel, tuple_fraction);
-				
+
 				top_plan = create_plan(root, best_path);
 ```

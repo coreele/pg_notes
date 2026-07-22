@@ -2,7 +2,7 @@
 
 PostgreSQL 内核学习笔记，目录镜像 `src/backend/` 源码结构；跨模块调用链见 `traces/`。笔记文件统一命名：`NN_topic.md`（两位序号 + 主题）。
 
-______________________________________________________________________
+---
 
 ## 快速入口
 
@@ -29,6 +29,6 @@ ______________________________________________________________________
 - [PostgreSQL Internals (interdb.jp)](https://www.interdb.jp/pg/index.html)
 - [PostgreSQL Source Code](https://github.com/postgres/postgres)
 
-______________________________________________________________________
+---
 
 **Maintainer**: [coreele](https://github.com/coreele/pg_notes)

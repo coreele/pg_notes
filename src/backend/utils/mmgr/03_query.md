@@ -25,7 +25,7 @@ exec_simple_query
 		MemoryContextSwitchTo(CurTransactionContext);
 
     /* ... */
-    
+
 	MemoryContextSwitchTo(MessageContext);
 	pg_parse_query
 	pg_analyze_and_rewrite_fixedparams

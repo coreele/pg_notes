@@ -31,7 +31,7 @@ CFLAGS="-O0 -g3 -fno-inline -fno-omit-frame-pointer" \
 make -j4
 make install
 # make distclean
-# cp ./src/backend/postgres ~/app/pgdebug/bin/postgres 
+# cp ./src/backend/postgres ~/app/pgdebug/bin/postgres
 ```
 
 ## 初始化

@@ -71,17 +71,17 @@ WHERE l.locktype = 'virtualxid'  -- 只看宣告身份的那一行
   AND l.granted = true;          -- 只看锁的持有者
 ```
 
-| client 1 | client 2 |
+| client 1                                   | client 2                             |
 | ------------------------------------------ | ------------------------------------ |
-| | `begin;` |
-| | `select pg_backend_pid(); --18479` |
-| `select * from vw_vxid where pid = 18479;` | |
-| `select pg_stat_get_backend_pid(10);` | |
-| | `select txid_current_if_assigned();` |
-| | `insert into tb values(1);` |
-| `select * from vw_vxid where pid = 18479;` | |
-| | `select txid_current_if_assigned();` |
-| | `commit;` |
+|                                            | `begin;`                             |
+|                                            | `select pg_backend_pid(); --18479`   |
+| `select * from vw_vxid where pid = 18479;` |                                      |
+| `select pg_stat_get_backend_pid(10);`      |                                      |
+|                                            | `select txid_current_if_assigned();` |
+|                                            | `insert into tb values(1);`          |
+| `select * from vw_vxid where pid = 18479;` |                                      |
+|                                            | `select txid_current_if_assigned();` |
+|                                            | `commit;`                            |
 
 > [!NOTE] 注意
 > 事务开始时即分配 vxid，但无 xid，执行插入数据时，内核分配 xid

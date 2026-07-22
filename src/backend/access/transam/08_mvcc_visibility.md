@@ -1,13 +1,13 @@
 # MVCC Visibility
 
-| client 1 | client 2 | note |
+| client 1            | client 2                    | note                 |
 | ------------------- | --------------------------- | -------------------- |
-| | `insert into tb values(1);` | implicit transaction |
-| | `begin;` | |
-| | `insert into tb values(2);` | |
-| `select * from tb;` | | 2 is **invisible** |
-| | `commit`; | |
-| `select * from tb;` | | 2 is **visible** |
+|                     | `insert into tb values(1);` | implicit transaction |
+|                     | `begin;`                    |                      |
+|                     | `insert into tb values(2);` |                      |
+| `select * from tb;` |                             | 2 is **invisible**   |
+|                     | `commit`;                   |                      |
+| `select * from tb;` |                             | 2 is **visible**     |
 
 ## 核心函数 `HeapTupleSatisfiesMVCC`
 

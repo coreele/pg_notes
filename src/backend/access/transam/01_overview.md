@@ -8,21 +8,21 @@
 - 锁: https://postgres-internals.cn/docs/chapter12/
 - 并发: https://www.interdb.jp/pg/pgsql05/index.html
 
-| **事务特性** | **核心实现方式** | **关键补充 (内核视角)** |
+| **事务特性**   | **核心实现方式**                                | **关键补充 (内核视角)**                                  |
 | -------------- | ----------------------------------------------- | -------------------------------------------------------- |
 | **隔离性 (I)** | **MVCC** (快照隔离) + **Lock Manager** (锁机制) | DDL 也是基于 MVCC。**2PL (两阶段锁)** 用于处理读写冲突。 |
-| **持久性 (D)** | **WAL** (预写日志) + **Checkpointer** | 还有 **Double Write** 机制（在某些存储环境下）防止半写。 |
-| **原子性 (A)** | **CLog** (状态位) + **WAL** | 事务提交本质上是修改 CLog 里的 2 个 bit 位。 |
-| **一致性 (C)** | 它是 A+I+D 的综合结果 + **数据完整性约束** | 包括 唯一索引、外键、Check 约束等主动校验。 |
+| **持久性 (D)** | **WAL** (预写日志) + **Checkpointer**           | 还有 **Double Write** 机制（在某些存储环境下）防止半写。 |
+| **原子性 (A)** | **CLog** (状态位) + **WAL**                     | 事务提交本质上是修改 CLog 里的 2 个 bit 位。             |
+| **一致性 (C)** | 它是 A+I+D 的综合结果 + **数据完整性约束**      | 包括 唯一索引、外键、Check 约束等主动校验。              |
 
 ## 隔离级别
 
-| Isolation Level | Dirty Read | Nonrepeatable Read | Phantom Read | Serialization Anomaly |
+| Isolation Level  | Dirty Read             | Nonrepeatable Read | Phantom Read           | Serialization Anomaly |
 | ---------------- | ---------------------- | ------------------ | ---------------------- | --------------------- |
-| Read uncommitted | Allowed, but not in PG | Possible | Possible | Possible |
-| Read committed | Not possible | Possible | Possible | Possible |
-| Repeatable read | Not possible | Not possible | Allowed, but not in PG | Possible |
-| Serializable | Not possible | Not possible | Not possible | Not possible |
+| Read uncommitted | Allowed, but not in PG | Possible           | Possible               | Possible              |
+| Read committed   | Not possible           | Possible           | Possible               | Possible              |
+| Repeatable read  | Not possible           | Not possible       | Allowed, but not in PG | Possible              |
+| Serializable     | Not possible           | Not possible       | Not possible           | Not possible          |
 
 [异常图示](assets/draw_iso.md)
 
@@ -38,17 +38,17 @@ create table tb(id int, account int);
 insert into tb(id, account) values (1, 100);
 ```
 
-| 事务A | 事务B |
+| 事务A                                            | 事务B                                            |
 | ------------------------------------------------ | ------------------------------------------------ |
-| `BEGIN ISOLATION LEVEL READ COMMITTED;` | |
-| | `BEGIN ISOLATION LEVEL READ COMMITTED;` |
-| `select * from tb;` | |
-| | `select * from tb;` |
-| `update tb set account = 100 + 50 where id = 1;` | |
-| `commit` | |
-| | `update tb set account = 100 - 20 where id = 1;` |
-| | `commit` |
-| `select * from tb;` 结果为80，丢失+50 | |
+| `BEGIN ISOLATION LEVEL READ COMMITTED;`          |                                                  |
+|                                                  | `BEGIN ISOLATION LEVEL READ COMMITTED;`          |
+| `select * from tb;`                              |                                                  |
+|                                                  | `select * from tb;`                              |
+| `update tb set account = 100 + 50 where id = 1;` |                                                  |
+| `commit`                                         |                                                  |
+|                                                  | `update tb set account = 100 - 20 where id = 1;` |
+|                                                  | `commit`                                         |
+| `select * from tb;` 结果为80，丢失+50            |                                                  |
 
 解决方法:
 

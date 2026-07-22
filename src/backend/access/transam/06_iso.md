@@ -42,12 +42,12 @@ $$ language plpgsql;
 
 2. 并发更新
 
-| Employee A | Employee B |
+| Employee A                                           | Employee B                                           |
 | ---------------------------------------------------- | ---------------------------------------------------- |
 | `start transaction isolation level repeatable read;` | `start transaction isolation level repeatable read;` |
-| `call update_status('A');` | |
-| | `call update_status('B');` |
-| `commit;` | `commit;` |
+| `call update_status('A');`                           |                                                      |
+|                                                      | `call update_status('B');`                           |
+| `commit;`                                            | `commit;`                                            |
 
 3. 最终结果
 
@@ -69,7 +69,7 @@ postgres=# select * from stuff;
 >
 > 写偏斜是一种异常现象：两个并发事务分别读取了重叠的数据集合，然后各自写入互不重叠的字段，尽管没有任何单个列被同时覆盖，但最终却导致整体数据状态变为无效或违反约束。
 
-______________________________________________________________________
+---
 
 ### 只读事务异常(Read-Only Transaction Anomaly)
 
@@ -93,18 +93,18 @@ ______________________________________________________________________
 - **事务 2**：从支票账户扣除 10。如果此举导致（支票账户 + 储蓄账户）变为负数，则额外扣除 1 作为透支费。
 - **事务 3**：读取余额（支票账户，储蓄账户）。
 
-| _Txn 1_ | _Txn 2_ | _Txn 3_ |
+| _Txn 1_           | _Txn 2_             | _Txn 3_           |
 | ----------------- | ------------------- | ----------------- |
-| | R(_checking_) → 0 | |
-| | R(_savings_) → 0 | |
-| R(_savings_) → 0 | | |
-| W(_savings_) ← 20 | | |
-| Commit | | |
-| | | R(_checking_) → 0 |
-| | | R(_savings_) → 20 |
-| | | Commit |
-| | W(_checking_) ← -11 | |
-| | Commit | |
+|                   | R(_checking_) → 0   |                   |
+|                   | R(_savings_) → 0    |                   |
+| R(_savings_) → 0  |                     |                   |
+| W(_savings_) ← 20 |                     |                   |
+| Commit            |                     |                   |
+|                   |                     | R(_checking_) → 0 |
+|                   |                     | R(_savings_) → 20 |
+|                   |                     | Commit            |
+|                   | W(_checking_) ← -11 |                   |
+|                   | Commit              |                   |
 
 **分析**：
 
@@ -191,7 +191,7 @@ COMMIT;
 ERROR: could not serialize access due to read/write dependencies among transactions Reason code: Canceled on identification as a pivot, during write.
 
 SQL state: 40001
-Detail: Reason code: Canceled on identification as a pivot, during write. 
+Detail: Reason code: Canceled on identification as a pivot, during write.
 Hint: The transaction might succeed if retried.
 ```
 
@@ -218,8 +218,8 @@ SSI 的核心思想是 **“乐观并发控制 + 冲突依赖监控”**。
 
 3. 技术对比
 
-| 维度 | 传统可串行化 (Lock-based) | PostgreSQL SSI |
+| 维度     | 传统可串行化 (Lock-based)      | PostgreSQL SSI                     |
 | -------- | ------------------------------ | ---------------------------------- |
 | **手段** | **悲观**：读写互相阻塞（等锁） | **乐观**：读写完全并发（记录依赖） |
-| **性能** | 并发度低，容易死锁 | 并发度高，但冲突时需**应用层重试** |
-| **代价** | 时间损耗（等待） | 资源损耗（监控依赖及回滚开销） |
+| **性能** | 并发度低，容易死锁             | 并发度高，但冲突时需**应用层重试** |
+| **代价** | 时间损耗（等待）               | 资源损耗（监控依赖及回滚开销）     |

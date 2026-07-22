@@ -16,26 +16,26 @@ create table accounts(id int, balance int);
 insert into accounts values (1, 500);
 ```
 
-| _TXN A_ | _TXN B_ |
+| _TXN A_                         | _TXN B_                                           |
 | ------------------------------- | ------------------------------------------------- |
-| `begin;` | `begin;` |
-| | `update accounts set balance = 200 where id = 1;` |
-| `select * from accounts; --500` | |
-| | `commit;` |
-| `select * from accounts; --200` | |
-| `commit;` | |
+| `begin;`                        | `begin;`                                          |
+|                                 | `update accounts set balance = 200 where id = 1;` |
+| `select * from accounts; --500` |                                                   |
+|                                 | `commit;`                                         |
+| `select * from accounts; --200` |                                                   |
+| `commit;`                       |                                                   |
 
 - 默认隔离级别为 `read committed`，只要事务B提交就可以读到最新结果，因此存在不可重复读问题
 - 将隔离级别修改为 `repeatable read` 读取结果一致
 
-| _TXN A_ | _TXN B_ |
+| _TXN A_                                              | _TXN B_                                           |
 | ---------------------------------------------------- | ------------------------------------------------- |
-| `start transaction isolation level repeatable read;` | `begin;` |
-| | `update accounts set balance = 200 where id = 1;` |
-| `select * from accounts; --500` | |
-| | `commit;` |
-| `select * from accounts; --500` | |
-| `commit;` | |
+| `start transaction isolation level repeatable read;` | `begin;`                                          |
+|                                                      | `update accounts set balance = 200 where id = 1;` |
+| `select * from accounts; --500`                      |                                                   |
+|                                                      | `commit;`                                         |
+| `select * from accounts; --500`                      |                                                   |
+| `commit;`                                            |                                                   |
 
 当指定隔离界别为 `repeatable read`, 两次读取数据相同，实现可重复读，且由于快照隔离的天然特性，也不存在幻读问题；实现方式：**快照！**
 

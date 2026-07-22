@@ -43,12 +43,12 @@
 
 一条记录在字节流上占 `[start, end)`：
 
-| 字段 / 工具输出              | 含义                                                 |
-| ---------------------- | -------------------------------------------------- |
-| `xl_prev`              | **上一条**记录的**开始位置**（`ReserveXLogInsertLocation` 写入） |
-| `XLogInsert()` 返回值     | **本条**记录的结束位置（`EndRecPtr`）                         |
-| `pg_waldump` 的 `lsn:`  | 本条记录的 **EndRecPtr**                                |
-| `pg_waldump` 的 `prev:` | 本条 `xl_prev` = 上一条记录的 **start**                    |
+| 字段 / 工具输出         | 含义                                                             |
+| ----------------------- | ---------------------------------------------------------------- |
+| `xl_prev`               | **上一条**记录的**开始位置**（`ReserveXLogInsertLocation` 写入） |
+| `XLogInsert()` 返回值   | **本条**记录的结束位置（`EndRecPtr`）                            |
+| `pg_waldump` 的 `lsn:`  | 本条记录的 **EndRecPtr**                                         |
+| `pg_waldump` 的 `prev:` | 本条 `xl_prev` = 上一条记录的 **start**                          |
 
 ### 4.2 数据页上的 LSN（`page_lsn`）
 

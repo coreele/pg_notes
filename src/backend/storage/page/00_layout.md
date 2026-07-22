@@ -19,13 +19,13 @@ insert into tb values (1), (2), (3);
 - 代码位于 `postgres/contrib/pageinspect/`，编译后使用
 
 ```sh
-# 1. 自动获取PG服务端头文件目录（模糊化安装路径） 
-PG_INCLUDE=$(<PG_INSTALL_DIR>/bin/pg_config --includedir-server) 
+# 1. 自动获取PG服务端头文件目录（模糊化安装路径）
+PG_INCLUDE=$(<PG_INSTALL_DIR>/bin/pg_config --includedir-server)
 
-# 2. 编译扩展（指定PG版本+头文件路径） 
-make PG_CONFIG=<PG_INSTALL_DIR>/bin/pg_config CPPFLAGS="-I$PG_INCLUDE" 
+# 2. 编译扩展（指定PG版本+头文件路径）
+make PG_CONFIG=<PG_INSTALL_DIR>/bin/pg_config CPPFLAGS="-I$PG_INCLUDE"
 
-# 3. 安装扩展（指定PG版本） 
+# 3. 安装扩展（指定PG版本）
 make install PG_CONFIG=<PG_INSTALL_DIR>/bin/pg_config
 ```
 
@@ -132,7 +132,7 @@ struct HeapTupleHeaderData
 	uint16		t_infomask;		/* various flag bits, see below */
 	uint8		t_hoff;			/* sizeof header incl. bitmap, padding */
 	/* ^ - 23 bytes - ^ */
-    
+
 	bits8		t_bits[FLEXIBLE_ARRAY_MEMBER];	/* bitmap of NULLs */
 
 	/* MORE DATA FOLLOWS AT END OF STRUCT */

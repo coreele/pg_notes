@@ -95,9 +95,9 @@ PortalRun - PortalRunSelect
 
 							// True if heap tuple satisfies a time qual
 							HeapTupleSatisfiesVisibility - HeapTupleSatisfiesMVCC
-							
+
 							HeapCheckForSerializableConflictOut
-							
+
 							scan->rs_vistuples[ntup++] = lineoff;
 
 						LockBuffer(buffer, BUFFER_LOCK_UNLOCK);
