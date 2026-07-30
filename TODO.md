@@ -34,7 +34,7 @@
 
 ## transaction
 
-- How: CLOG
+- How: CLOG ✔
 - Why: Non-overwrite MVCC
 - How: LWLock vs. SpinLock vs. Heavyweight Lock
 - What & Why: MultiXact
@@ -79,7 +79,7 @@
 - How: Crash Recovery Redo Path ✔
 - How: Base Backup ✔
 - How: Streaming Replication & Log Decoding ✔
-- What: Replication Slot & Timeline
+- What: Replication Slot & Timeline ✔
 
 ## others
 

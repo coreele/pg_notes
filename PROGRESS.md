@@ -38,14 +38,15 @@
 | What & Why: Mini-Transaction ✔              | `transam/12_mini_transaction.md`             | **较好** | atomic action、临界区序、与用户事务分层、incomplete split 边界        | 对着 `_bt_split` / `XLOG_BTREE_SPLIT` 跑一刀多页实验 |
 | How: Crash Recovery Redo Path ✔             | `transam/13_crash_recovery_redo.md`          | **较好** | `StartupXLOG`/`PerformWalRecovery`、`rm_redo`、BLK_*、与 FPW/LSN 衔接 | 自己对照一次 kill -9 后日志里的 redo 起止 LSN        |
 | How: Base Backup ✔                          | `transam/14_base_backup.md`                  | **入门** | `runningBackups` 强制 `doPageWrites`、与 FPW 对照、start/stop LSN     | 跑一遍 `pg_basebackup` 并对 `backup_label` / waldump |
-| How: Streaming Replication & Log Decoding ✔ | `transam/15_streaming_replication.md`        | **入门** | walsender/walreceiver、持续 `rm_redo`、逻辑解码 vs 物理 apply         | 搭一主一备看 apply lag；对 slot get_changes 看一眼   |
+| How: Streaming Replication & Log Decoding ✔ | `replication/01_streaming_replication.md`    | **入门** | walsender/walreceiver、持续 `rm_redo`、逻辑解码 vs 物理 apply         | 搭一主一备看 apply lag；对 slot get_changes 看一眼   |
+| What: Replication Slot & Timeline ✔         | `replication/02_replication_slot_timeline.md`| **入门** | 物理/逻辑槽位点、`pg_replslot`、TLI 分叉与 history、与升主衔接         | 建物理槽看 `pg_replication_slots`；promote 后看 `.history` |
 | （旁路）Recovery / Checkpoint               | `09_wal_recovery.md`、overview 中 checkpoint | **入门** | RTO/RPO 分层、checkpoint 触发                                         | restartpoint；与 crash redo 对照                     |
 
 ### transaction
 
 | TODO 条目                              | 笔记落点                                           | 等级     | 已掌握                           | 应强化                                              |
 | -------------------------------------- | -------------------------------------------------- | -------- | -------------------------------- | --------------------------------------------------- |
-| How: CLOG                              | 零散提及（commit 链路）                            | **入门** | 提交改 clog bit、与 WAL 顺序直觉 | `TransactionIdCommitTree`、`pg_xact` 布局、组提交   |
+| How: CLOG ✔                            | `transam/15_clog.md`                           | **较好** | 2 bit 结局、`CommitTree`、WAL→CLOG、hint、subcommitted 跨页 | 对照一次 commit 的 clog WAL；异步提交 LSN 组再抠 |
 | Why: Non-overwrite MVCC                | `07_mvcc_snapshot`、`08_mvcc_visibility`、`06_iso` | **较好** | 快照、可见性、隔离异常           | 明确写成「非覆盖」专题：旧版本链、HOT、与 undo 对比 |
 | How: LWLock vs SpinLock vs Heavyweight | `storage/lmgr/*`                                   | **较好** | 行锁/冲突、UPDATE 锁路径         | 三种锁适用场景对照表 + 源码入口对照                 |
 | （旁路）XID / VXID / 状态机            | `02`–`05`、`03_state`                              | **较好** | 事务状态、延迟分配 XID           | subxact、2PC                                        |
@@ -212,8 +213,8 @@ WAL 持久化主链     ██████████████░░  强（
 
 | 建议专题                    | 源码锚点                         | 为何要学                   | 与现状关系     |
 | --------------------------- | -------------------------------- | -------------------------- | -------------- |
-| Replication Slot            | `slot.c`、`replication/`         | 保留 WAL、解码位点         | 流复制必修附件 |
-| Timeline / archive recovery | `xlogrecovery`、`timeline`       | PITR、升主                 | recovery 入门  |
+| Replication Slot            | `slot.c`、`replication/`         | 保留 WAL、解码位点         | ✔ `02_replication_slot_timeline` |
+| Timeline / archive recovery | `xlogrecovery`、`timeline`       | PITR、升主                 | ✔ 同上（与 slot 合篇）     |
 | Logical Decoding 插件模型   | `logical/`、output plugin        | Decoding TODO 落地         | 未开始         |
 | Base backup 协议            | `basebackup*.c`、`pg_basebackup` | 与 FPW/runningBackups 闭环 | 概念已有       |
 

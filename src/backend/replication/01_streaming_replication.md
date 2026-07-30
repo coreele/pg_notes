@@ -11,9 +11,9 @@
 
 - 问题：crash recovery / base backup 是「一段 WAL 用完即止」；HA 与持续同步需要**不断**把主库新 WAL 送到另一进程/节点。
 - 解法：物理路径用 walsender → walreceiver → Startup redo；逻辑路径用 decoding 读 WAL → ReorderBuffer → output plugin。
-- 边界：slot / timeline 切换细节见下一课；本稿先钉进程、LSN 位点与两条路径的对照。
+- 边界：slot / timeline 见 [Replication Slot & Timeline](./02_replication_slot_timeline.md)；本稿先钉进程、LSN 位点与两条路径的对照。
 
-物理流复制通常先有一份 [Base Backup](./14_base_backup.md)，再从 backup stop（或指定 LSN）起追 WAL。逻辑解码不要求备库有整份数据文件镜像，但要求有能读到的 WAL（及常配合 replication slot）。
+物理流复制通常先有一份 [Base Backup](../access/transam/14_base_backup.md)，再从 backup stop（或指定 LSN）起追 WAL。逻辑解码不要求备库有整份数据文件镜像，但要求有能读到的 WAL（及常配合 replication slot）。
 
 ---
 
@@ -114,18 +114,18 @@ client / apply worker asks for changes
 advance slot confirmed_flush
 ```
 
-未提交事务的变更会在 ReorderBuffer 中暂存，**按提交顺序**输出。槽位钉住 WAL，防止 `restart_lsn` 之前的段被回收（细节见 Replication Slot 课）。
+未提交事务的变更会在 ReorderBuffer 中暂存，**按提交顺序**输出。槽位钉住 WAL，防止 `restart_lsn` 之前的段被回收（细节见 [Replication Slot & Timeline](./02_replication_slot_timeline.md)）。
 
 ---
 
 ## 6. 与 crash redo / base backup 的衔接
 
-| 机制                                      | 角色                                          |
-| ----------------------------------------- | --------------------------------------------- |
-| [Crash redo](./13_crash_recovery_redo.md) | 单机、本地 WAL、有终点                        |
-| [Base backup](./14_base_backup.md)        | 给物理备库（或 PITR）一个可 redo 的文件起点   |
-| Streaming（物理）                         | 起点之后持续喂 WAL + 同一套 `rm_redo`         |
-| Log decoding                              | 同一条 WAL 的另一条消费管道；不替代物理 apply |
+| 机制                                                          | 角色                                        |
+| ------------------------------------------------------------- | ------------------------------------------- |
+| [Crash redo](../access/transam/13_crash_recovery_redo.md)     | 单机、本地 WAL、有终点                      |
+| [Base backup](../access/transam/14_base_backup.md)            | 给物理备库（或 PITR）一个可 redo 的文件起点 |
+| Streaming（物理）                                             | 起点之后持续喂 WAL + 同一套 `rm_redo`       |
+| Log decoding                                                  | 同一条 WAL 的另一条消费管道；不替代物理 apply |
 
 备库上的 restartpoint：在持续恢复中周期性做「像 checkpoint 一样」的落点，便于推进可回收 WAL / 缩短再次启动时的重放量；不是主库那种结束恢复的 end-of-recovery checkpoint。
 
@@ -151,10 +151,10 @@ advance slot confirmed_flush
 | 和 crash redo 差别 | WAL 来源与是否结束；`rm_redo` 相同            |
 | 逻辑解码解决什么   | 从物理 WAL 抽出逻辑变更流                     |
 | 为何常和 slot 一起 | 钉住 WAL，避免解码所需段被删                  |
-| 本稿不含           | slot 生命周期、timeline history、级联复制细节 |
+| 本稿不含           | slot 生命周期、timeline history、级联复制细节（→ [02](./02_replication_slot_timeline.md)） |
 
 ---
 
-**相关笔记**: [WAL Recovery](./09_wal_recovery.md) · [Crash Recovery Redo](./13_crash_recovery_redo.md) · [Base Backup](./14_base_backup.md) · [Full Page Writes](./10_full_page_writes.md)
+**相关笔记**: [Replication Slot & Timeline](./02_replication_slot_timeline.md) · [WAL Recovery](../access/transam/09_wal_recovery.md) · [Crash Recovery Redo](../access/transam/13_crash_recovery_redo.md) · [Base Backup](../access/transam/14_base_backup.md) · [Full Page Writes](../access/transam/10_full_page_writes.md)
 
 **最后更新**: 2026-07-21 | **适用版本**: PostgreSQL 15.x / 16.x / devel
