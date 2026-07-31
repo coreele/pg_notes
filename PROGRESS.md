@@ -60,7 +60,7 @@
 | what & when: Deduplication  | —                            | **未开始** | —                                               | B-tree posting list 去重时机             |
 | why & how: VACUUM           | —                            | **薄弱**   | 长事务卡住清理的直觉                            | freeze、索引清理、autovacuum             |
 | Why & How: TOAST            | —                            | **未开始** | —                                               | 超大字段外置、chunk、与 WAL              |
-| （旁路）Page / Buffer       | `page/00_layout`、`buffer/*` | **较好**   | pageinspect、命中/未命中、Clock Sweep 选 victim | dirty / pin / IO 状态机串起来            |
+| （旁路）Page / Buffer       | `page/01_layout`、`buffer/*` | **较好**   | pageinspect、命中/未命中、Clock Sweep 选 victim | dirty / pin / IO 状态机串起来            |
 
 ### access
 

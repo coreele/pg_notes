@@ -1,5 +1,7 @@
 # TODO
 
+## arch
+
 - Why: Process-based Model
 - What & Why: DSA (Dynamic Shared Memory Allocator)
 - How: Aux Processes (checkpointer / bgwriter / walwriter / autovacuum)
@@ -15,6 +17,11 @@
 
 - how: expr
 - how: func call
+- What: pg_type / Typmod / Type OID
+- How: Type Coercion & Casts (pg_cast)
+- How: Function / Operator Type Resolution
+- what & when: Polymorphism (anyelement / anyarray, etc.)
+- What: Collation (optional)
 
 ## optimizer
 
@@ -85,7 +92,7 @@
 
 - how & when: Parallel Query
 - What & when & why: JIT Compilation
-- What: FDW / Extension Hooks（选修）
+- What: FDW / Extension Hooks (optional)
 
 ## distributed
 

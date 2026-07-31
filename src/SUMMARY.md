@@ -59,7 +59,7 @@
   - [Replication Slot & Timeline](./backend/replication/02_replication_slot_timeline.md)
 - [storage](./backend/storage/storage.md)
   - [page](./backend/storage/page/page.md)
-    - [Layout](./backend/storage/page/00_layout.md)
+    - [Layout](./backend/storage/page/01_layout.md)
   - [buffer](./backend/storage/buffer/buffer.md)
     - [README](./backend/storage/buffer/00_readme.md)
     - [Overview](./backend/storage/buffer/01_overview.md)
