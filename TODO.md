@@ -111,6 +111,7 @@
 ## storage
 
 - What: Page Layout ✔
+- What: Page Checksums (README) ✔
 - What: Buffer Manager Overview ✔
 - why: Heap File Organization
 - why: VM and FSM
@@ -119,6 +120,10 @@
 - Why & How: TOAST
 - How: Autovacuum
 - What: Data Checksums & Sync Method (vs FPW)
+
+## tools
+
+- How: pageinspect ✔
 
 ## traces
 

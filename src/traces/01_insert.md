@@ -132,7 +132,7 @@ finish_xact_command
 
 ## Hint Bits
 
-依赖扩展: `pageinspector`: 用于直接查看页面和元组信息
+依赖扩展: [`pageinspect`](../tools/01_pageinspect.md): 用于直接查看页面和元组信息
 
 ```sql
 drop table if exists tb;
@@ -146,7 +146,7 @@ create table tb(a int);
 insert into tb values (1);
 ```
 
-插入后不提交，此时新开一个 psql 客户端无法查询到 tb 中的数据，但是使用 pageinspector 工具可以看到已经有记录已经占据了页面空间，upper 为 8160
+插入后不提交，此时新开一个 psql 客户端无法查询到 tb 中的数据，但是使用 pageinspect 工具可以看到已经有记录已经占据了页面空间，upper 为 8160
 
 ```sql
 select from tb;

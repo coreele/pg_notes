@@ -14,7 +14,7 @@ PostgreSQL 内核学习笔记，目录镜像 `src/backend/` 源码结构；跨�
 ## 核心模块
 
 - [查询全链路](traces/00_query_overview.md) — tcop → parser → optimizer → executor
-- [页面布局](backend/storage/page/01_layout.md) — Heap Page、Buffer Pool
+- [页面布局](backend/storage/page/01_page_layout.md) — Heap Page
 - [事务 / MVCC](backend/access/transam/01_overview.md) — XID、WAL、可见性
 - [内存管理](backend/utils/mmgr/01_overview.md) — MemoryContext
 
