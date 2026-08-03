@@ -28,8 +28,10 @@
 - [parser](./backend/parser/parser.md)
   - [Overview](./backend/parser/00_overview.md)
   - [Analyze](./backend/parser/01_analyze.md)
+<!--
 - [optimizer](./backend/optimizer/optimizer.md)
   - [Overview](./backend/optimizer/00_overview.md)
+-->
 - [executor](./backend/executor/executor.md)
   - [Overview](./backend/executor/00_overview.md)
   - [Pipeline](./backend/executor/01_pipeline.md)
@@ -66,6 +68,9 @@
   - [page](./backend/storage/page/page.md)
     - [README](./backend/storage/page/00_readme.md)
     - [Page Layout](./backend/storage/page/01_page_layout.md)
+  - [freespace](./backend/storage/freespace/freespace.md)
+    - [README](./backend/storage/freespace/00_readme.md)
+    - [Free Space Map](./backend/storage/freespace/01_fsm.md)
   - [buffer](./backend/storage/buffer/buffer.md)
     - [README](./backend/storage/buffer/00_readme.md)
     - [Overview](./backend/storage/buffer/01_overview.md)
