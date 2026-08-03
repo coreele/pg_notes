@@ -27,6 +27,13 @@ npm run format:check  # 仅检查，不改写
 
 **提交前自动格式化**：`.githooks/pre-commit` 会对本次暂存的 `*.md` 跑 Prettier，改动会重新纳入暂存区。
 
+## 参考文档
+
+- https://www.interdb.jp/pg/index.html
+- https://deepwiki.com/postgres/postgres/1-overview
+- https://roadmap.sh/postgresql-dba
+- https://postgrespro.com/blog/pgsql/3994098
+
 ---
 
 **Maintainer**: [coreele](https://github.com/coreele)

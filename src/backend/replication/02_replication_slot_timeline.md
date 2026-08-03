@@ -152,8 +152,8 @@ drop / 失效  →  释放保留；max_slot_wal_keep_size 等可令槽 invalid
 
 | 机制 | 角色 |
 | ---- | ---- |
-| [Crash redo](../access/transam/13_crash_recovery_redo.md) | 本地、通常单 timeline、有终点 |
-| [Base backup](../access/transam/14_base_backup.md) | 文件起点；`backup_label` 含 start 点（含 timeline 语境） |
+| [Crash redo](../access/transam/15_crash_recovery_redo.md) | 本地、通常单 timeline、有终点 |
+| [Base backup](../access/transam/16_base_backup.md) | 文件起点；`backup_label` 含 start 点（含 timeline 语境） |
 | [Streaming](./01_streaming_replication.md) | 持续喂 WAL；物理槽降低「段已删」概率 |
 | Slot | 主库侧保留契约 |
 | Timeline | 升主 / PITR 后的历史坐标系 |
@@ -196,6 +196,6 @@ drop / 失效  →  释放保留；max_slot_wal_keep_size 等可令槽 invalid
 
 ---
 
-**相关笔记**: [Streaming Replication & Log Decoding](./01_streaming_replication.md) · [README（walreceiver/walsender IPC）](./00_readme.md) · [Crash Recovery Redo](../access/transam/13_crash_recovery_redo.md) · [Base Backup](../access/transam/14_base_backup.md) · [XLogRecPtr (LSN)](../access/transam/11_xlogrecptr_lsn.md) · [WAL Recovery](../access/transam/09_wal_recovery.md)
+**相关笔记**: [Streaming Replication & Log Decoding](./01_streaming_replication.md) · [README（walreceiver/walsender IPC）](./00_readme.md) · [Crash Recovery Redo](../access/transam/15_crash_recovery_redo.md) · [Base Backup](../access/transam/16_base_backup.md) · [XLogRecPtr (LSN)](../access/transam/11_xlogrecptr_lsn.md) · [WAL Recovery](../access/transam/14_wal_recovery.md)
 
 **最后更新**: 2026-07-30 | **适用版本**: PostgreSQL 15.x / 16.x / devel

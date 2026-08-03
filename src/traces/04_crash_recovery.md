@@ -1,6 +1,6 @@
 # crash recovery
 
-`CHECKPOINT` → `INSERT` + `COMMIT` → `kill -9` → 重启 Startup redo。机制见 [13_crash_recovery_redo](../backend/access/transam/13_crash_recovery_redo.md)；写路径见 [01_insert](./01_insert.md)。仅本地 crash recovery。
+`CHECKPOINT` → `INSERT` + `COMMIT` → `kill -9` → 重启 Startup redo。机制见 [15_crash_recovery_redo](../backend/access/transam/15_crash_recovery_redo.md)；写路径见 [01_insert](./01_insert.md)。仅本地 crash recovery。
 
 ## 时序
 
@@ -30,7 +30,7 @@ StartupXLOG                          /* access/transam/xlog.c */
   // end-of-recovery checkpoint
 ```
 
-本场景常见：未刷脏 → `BLK_NEEDS_REDO`；崩溃前已 `CHECKPOINT`/刷页 → `BLK_DONE`；带 FPI APPLY → `BLK_RESTORED`。分支条件见 [13](../backend/access/transam/13_crash_recovery_redo.md) §4。
+本场景常见：未刷脏 → `BLK_NEEDS_REDO`；崩溃前已 `CHECKPOINT`/刷页 → `BLK_DONE`；带 FPI APPLY → `BLK_RESTORED`。分支条件见 [15_crash_recovery_redo](../backend/access/transam/15_crash_recovery_redo.md) §4。
 
 ## 实验
 

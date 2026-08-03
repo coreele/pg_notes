@@ -92,7 +92,7 @@ next WAL record: insert downlink in parent
   (may itself split and emit more records)
 ```
 
-注册形态（buffer 列表可再含兄弟页；BufData / MainData 见 WAL Record 笔记）：
+注册形态（buffer 列表可再含兄弟页；BufData / MainData 见 [WAL Record Structure & Insertion](./10_wal_record_insert.md)）：
 
 ```c
 XLogBeginInsert();
@@ -108,7 +108,7 @@ WAL redo 的原子边界是记录，不是 SQL 事务。必须同进同退的多
 
 ### 4.3 与 FPW / LSN
 
-- FPW：防单页半写。MTR 里注册的每个 buffer 仍按 `page_lsn <= RedoRecPtr` 决定是否拍 FPI（[Full Page Writes](./10_full_page_writes.md)）。
+- FPW：防单页半写。MTR 里注册的每个 buffer 仍按 `page_lsn <= RedoRecPtr` 决定是否拍 FPI（[Full Page Writes](./13_full_page_writes.md)）。
 - LSN：`XLogInsert` 返回的 EndRecPtr 写到本条记录改过的每一页的 `pd_lsn`；redo 用 `lsn <= PageGetLSN` 判断该页是否已含本 atomic action（[XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md)）。
 
 职责划分：MTR 决定「哪些页挂在同一条 WAL」；FPW / LSN 决定「如何防半写、如何判断该记录是否已应用到某页」。
@@ -159,6 +159,6 @@ MTR-2: insert downlink in parent; clear incomplete flag
 
 ---
 
-**相关笔记**: [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [Full Page Writes](./10_full_page_writes.md) · [WAL Record](../../../../temp/wal_record.md) · [nbtree README](../nbtree/00_readme.md) · [insert 链路](../../../traces/01_insert.md)
+**相关笔记**: [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [Full Page Writes](./13_full_page_writes.md) · [WAL Record Structure & Insertion](./10_wal_record_insert.md) · [nbtree README](../nbtree/00_readme.md) · [insert 链路](../../../traces/01_insert.md)
 
 **最后更新**: 2026-07-20 | **适用版本**: PostgreSQL 15.x / 16.x / devel

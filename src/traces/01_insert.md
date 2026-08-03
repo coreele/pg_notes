@@ -271,5 +271,5 @@ rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/102BEB78,
 ## 延伸阅读
 
 - WAL 原理图：`../backend/access/transam/assets/draw_wal_principle.md`
-- 恢复：`../backend/access/transam/09_wal_recovery.md`
+- 恢复：`../backend/access/transam/14_wal_recovery.md`
 - 事务概览：`../backend/access/transam/01_overview.md`

@@ -10,7 +10,7 @@ Base backup：在线拷贝数据目录（及表空间），再配上备份窗口
 
 > 稳定旧页、无并发写时：纯读文件得到的 8KB 与盘上一致，拷贝本身不会造半写。半写只来自「拷的同时该页正在被写」。FPI 解决这类并发半写；跨文件时间错位靠 start～stop 的 WAL 重放。
 
-对照 [Full Page Writes](./10_full_page_writes.md)：crash recovery 防本机半写；base backup 防备份窗口内并发写造成的副本半写，并消化跨文件不一致。
+对照 [Full Page Writes](./13_full_page_writes.md)：crash recovery 防本机半写；base backup 防备份窗口内并发写造成的副本半写，并消化跨文件不一致。
 
 ---
 
@@ -135,6 +135,6 @@ SELECT * FROM pg_backup_stop(true);
 
 ---
 
-**相关笔记**: [Full Page Writes](./10_full_page_writes.md) · [Crash Recovery Redo](./13_crash_recovery_redo.md) · [Streaming Replication & Log Decoding](../../replication/01_streaming_replication.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [WAL Recovery](./09_wal_recovery.md)
+**相关笔记**: [Full Page Writes](./13_full_page_writes.md) · [Crash Recovery Redo](./15_crash_recovery_redo.md) · [Streaming Replication & Log Decoding](../../replication/01_streaming_replication.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [WAL Recovery](./14_wal_recovery.md)
 
 **最后更新**: 2026-07-21 | **适用版本**: PostgreSQL 15.x / 16.x / devel

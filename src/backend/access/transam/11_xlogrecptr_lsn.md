@@ -86,7 +86,7 @@ Insert LSN  ≥  Write LSN  ≥  Flush LSN
 
 `COMMIT` 时 `XLogFlush(commit_lsn)` 推进 **Flush**，保证已提交事务的 WAL 可崩溃恢复。
 
-`RedoRecPtr`（`CheckPoint.redo`）：最近一次 checkpoint **开始时**记下的「下一条可用 LSN」；崩溃恢复从此重放。也是 FPW 里 `page_lsn <= RedoRecPtr` 的参照点（见 [Full Page Writes](./10_full_page_writes.md)）。
+`RedoRecPtr`（`CheckPoint.redo`）：最近一次 checkpoint **开始时**记下的「下一条可用 LSN」；崩溃恢复从此重放。也是 FPW 里 `page_lsn <= RedoRecPtr` 的参照点（见 [Full Page Writes](./13_full_page_writes.md)）。
 
 ---
 
@@ -166,6 +166,6 @@ pg_waldump -s <insert_lsn> -n 3
 
 ---
 
-**相关笔记**: [Full Page Writes](./10_full_page_writes.md) · [WAL Record](../../../../temp/wal_record.md) · [insert 链路](../../../traces/01_insert.md)
+**相关笔记**: [Full Page Writes](./13_full_page_writes.md) · [WAL Record Structure & Insertion](./10_wal_record_insert.md) · [insert 链路](../../../traces/01_insert.md)
 
 **最后更新**: 2026-07-16 | **适用版本**: PostgreSQL 15.x / 16.x / devel

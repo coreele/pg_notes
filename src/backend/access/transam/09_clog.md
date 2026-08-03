@@ -94,12 +94,12 @@ Hint 为性能优化；权威状态仍以 CLOG（含恢复后的 CLOG）为准�
 | [XID](./05_xid.md) | 分配事务标识；CLOG 按标识存储提交状态 |
 | [Snapshot](./07_mvcc_snapshot.md) / [Visibility](./08_mvcc_visibility.md) | 结合 DidCommit/DidAbort 与快照判定可见性 |
 | [MTR](./12_mini_transaction.md) | 物理原子性由单条 WAL 保证；逻辑提交结果由 top XID 的 CLOG 状态决定 |
-| [Crash redo](./13_crash_recovery_redo.md) | 使数据页与已 flush 的 WAL 一致；对外可见性仍取决于 CLOG |
+| [Crash redo](./15_crash_recovery_redo.md) | 使数据页与已 flush 的 WAL 一致；对外可见性仍取决于 CLOG |
 
 组提交、CLOG 截断以及与 freeze / wraparound 的交界，见 XID wraparound 与 VACUUM 相关笔记。
 
 ---
 
-**相关笔记**: [XID](./05_xid.md) · [Process](./02_process.md) · [MVCC Visibility](./08_mvcc_visibility.md) · [Mini-Transaction](./12_mini_transaction.md) · [Crash Recovery Redo](./13_crash_recovery_redo.md) · [README: pg_xact](./00_readme.md)
+**相关笔记**: [XID](./05_xid.md) · [Process](./02_process.md) · [MVCC Visibility](./08_mvcc_visibility.md) · [Mini-Transaction](./12_mini_transaction.md) · [Crash Recovery Redo](./15_crash_recovery_redo.md) · [README: pg_xact](./00_readme.md)
 
 **最后更新**: 2026-07-30 | **适用版本**: PostgreSQL 15.x / 16.x / devel

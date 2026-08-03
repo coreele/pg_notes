@@ -13,7 +13,7 @@
 - 解法：物理路径用 walsender → walreceiver → Startup redo；逻辑路径用 decoding 读 WAL → ReorderBuffer → output plugin。
 - 边界：slot / timeline 见 [Replication Slot & Timeline](./02_replication_slot_timeline.md)；本稿先钉进程、LSN 位点与两条路径的对照。
 
-物理流复制通常先有一份 [Base Backup](../access/transam/14_base_backup.md)，再从 backup stop（或指定 LSN）起追 WAL。逻辑解码不要求备库有整份数据文件镜像，但要求有能读到的 WAL（及常配合 replication slot）。
+物理流复制通常先有一份 [Base Backup](../access/transam/16_base_backup.md)，再从 backup stop（或指定 LSN）起追 WAL。逻辑解码不要求备库有整份数据文件镜像，但要求有能读到的 WAL（及常配合 replication slot）。
 
 ---
 
@@ -122,8 +122,8 @@ advance slot confirmed_flush
 
 | 机制                                                          | 角色                                        |
 | ------------------------------------------------------------- | ------------------------------------------- |
-| [Crash redo](../access/transam/13_crash_recovery_redo.md)     | 单机、本地 WAL、有终点                      |
-| [Base backup](../access/transam/14_base_backup.md)            | 给物理备库（或 PITR）一个可 redo 的文件起点 |
+| [Crash redo](../access/transam/15_crash_recovery_redo.md)     | 单机、本地 WAL、有终点                      |
+| [Base backup](../access/transam/16_base_backup.md)            | 给物理备库（或 PITR）一个可 redo 的文件起点 |
 | Streaming（物理）                                             | 起点之后持续喂 WAL + 同一套 `rm_redo`       |
 | Log decoding                                                  | 同一条 WAL 的另一条消费管道；不替代物理 apply |
 
@@ -155,6 +155,6 @@ advance slot confirmed_flush
 
 ---
 
-**相关笔记**: [Replication Slot & Timeline](./02_replication_slot_timeline.md) · [WAL Recovery](../access/transam/09_wal_recovery.md) · [Crash Recovery Redo](../access/transam/13_crash_recovery_redo.md) · [Base Backup](../access/transam/14_base_backup.md) · [Full Page Writes](../access/transam/10_full_page_writes.md)
+**相关笔记**: [Replication Slot & Timeline](./02_replication_slot_timeline.md) · [WAL Recovery](../access/transam/14_wal_recovery.md) · [Crash Recovery Redo](../access/transam/15_crash_recovery_redo.md) · [Base Backup](../access/transam/16_base_backup.md) · [Full Page Writes](../access/transam/13_full_page_writes.md)
 
 **最后更新**: 2026-07-21 | **适用版本**: PostgreSQL 15.x / 16.x / devel

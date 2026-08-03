@@ -98,7 +98,7 @@ RmgrTable[rmid].rm_redo(record)
 
 ## 6. 单页：何时跳过、何时套增量、何时整页覆盖
 
-`XLogReadBufferForRedoExtended`（与 [Full Page Writes](./10_full_page_writes.md)、[LSN](./11_xlogrecptr_lsn.md) 对照）：
+`XLogReadBufferForRedoExtended`（与 [Full Page Writes](./13_full_page_writes.md)、[LSN](./11_xlogrecptr_lsn.md) 对照）：
 
 | 返回             | 条件                                    | 行为                         |
 | ---------------- | --------------------------------------- | ---------------------------- |
@@ -171,6 +171,6 @@ Crash recovery 读到本地可提供的 WAL 末尾（通常受 Flush 边界约�
 
 ---
 
-**相关笔记**: [WAL Recovery（故障域）](./09_wal_recovery.md) · [Full Page Writes](./10_full_page_writes.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [Mini-Transaction](./12_mini_transaction.md) · [Base Backup](./14_base_backup.md) · [Streaming Replication](../../replication/01_streaming_replication.md) · [trace: crash recovery](../../../traces/04_crash_recovery.md)
+**相关笔记**: [WAL Recovery（故障域）](./14_wal_recovery.md) · [Full Page Writes](./13_full_page_writes.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [Mini-Transaction](./12_mini_transaction.md) · [Base Backup](./16_base_backup.md) · [Streaming Replication](../../replication/01_streaming_replication.md) · [trace: crash recovery](../../../traces/04_crash_recovery.md)
 
 **最后更新**: 2026-07-20 | **适用版本**: PostgreSQL 15.x / 16.x / devel
