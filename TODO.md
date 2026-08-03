@@ -1,14 +1,27 @@
 # TODO
 
+## meta
+
+- What: Architecture ✔
+- What: Code Structure ✔
+- How: Compile & Debug ✔
+- How: Boot (Postmaster → Backend) ✔
+
 ## arch
 
-- Why: Process-based Model
+- Why: Process-based Model ✔
 - What & Why: DSA (Dynamic Shared Memory Allocator)
 - How: Aux Processes (checkpointer / bgwriter / walwriter / autovacuum)
 - What: Shared Memory & ProcArray
 
+## tcop
+
+- What: Traffic Cop / Message Overview ✔
+
 ## parser
 
+- What: Parser Overview ✔
+- How: Analyze ✔
 - How: Flex & Bison
 - How: Query Rewrite
 - How: RLS / View / Rule Rewrite
@@ -25,6 +38,7 @@
 
 ## optimizer
 
+- What: Optimizer Overview ✔
 - how: optimizer
 - how: Join Order
 - How: Path to Plan Conversion
@@ -33,34 +47,61 @@
 
 ## executor
 
-- How: Demand-Driven Pipeline
-- What & Why: TupleTableSlot
+- What: Executor Overview ✔
+- How: Demand-Driven Pipeline ✔
+- What & Why: Executor / Portal State ✔
+- What & Why: TupleTableSlot ✔
 - How: Materialize & Sort (Material Nodes)
 - How: Join Nodes (NestLoop / HashJoin / MergeJoin)
 - How: Agg / HashAgg / Window
 
 ## transaction
 
+- What: Transaction Overview ✔
+- How: Transaction Process ✔
+- What: Transaction State ✔
+- What: Virtual XID ✔
+- What: XID ✔
+- How: Isolation ✔
+- How: MVCC Snapshot ✔
+- How: MVCC Visibility ✔
 - How: CLOG ✔
-- Why: Non-overwrite MVCC
-- How: LWLock vs. SpinLock vs. Heavyweight Lock
+- Why: Non-overwrite MVCC ✔
+- How: LWLock vs. SpinLock vs. Heavyweight Lock ✔
 - What & Why: MultiXact
 - How: Subtrans / SAVEPOINT
 - Why & How: XID Wraparound & Freeze
 - How: SSI (Serializable / Predicate Lock)
 - How: Two-Phase Commit
 
+## wal
+
+- What: WAL Recovery / Failure Domains ✔
+- How: WAL Record Structure & Insertion ✔
+- what & why & how: Full Page Writes ✔
+- What & Why: XLogRecPtr (LSN) ✔
+- What & Why: Mini-Transaction ✔
+- How: Crash Recovery Redo Path ✔
+- How: Base Backup ✔
+
+## replication
+
+- How: Streaming Replication & Log Decoding ✔
+- What: Replication Slot & Timeline ✔
+
 ## access
 
 - what: index types
-- why & how: nbtree
+- why & how: nbtree ✔
 - What: Table AM / Index AM API
 - How: HOT & Heap Prune
 - what & when: GIN or GiST or BRIN
 
 ## memory
 
-- how & why: Clock Sweep
+- What: MemoryContext / mmgr ✔
+- What: ResourceOwner ✔
+- how & why: Clock Sweep ✔
 - how: Deadlock Detector
 - how: syscache
 - how: Relcache
@@ -69,41 +110,26 @@
 
 ## storage
 
+- What: Page Layout ✔
+- What: Buffer Manager Overview ✔
 - why: Heap File Organization
 - why: VM and FSM
 - what & when: Deduplication
 - why & how: VACUUM
 - Why & How: TOAST
 - How: Autovacuum
-- What: Data Checksums & Sync Method（对照 FPW）
+- What: Data Checksums & Sync Method (vs FPW)
 
-## wal
+## traces
 
-- How: WAL Record Structure & Insertion ✔
-- what & why & how: Full Page Writes ✔
-- What & Why: XLogRecPtr (LSN) ✔
-- What & Why: Mini-Transaction ✔
-- How: Crash Recovery Redo Path ✔
-- How: Base Backup ✔
-- How: Streaming Replication & Log Decoding ✔
-- What: Replication Slot & Timeline ✔
+- How: Query Overview ✔
+- How: Insert ✔
+- How: Delete ✔
+- How: Update ✔
+- How: Crash Recovery ✔
 
 ## others
 
 - how & when: Parallel Query
 - What & when & why: JIT Compilation
 - What: FDW / Extension Hooks (optional)
-
-## distributed
-
-- [neon](https://github.com/neondatabase/neon)
-- [citus](https://github.com/citusdata/citus)
-
-## blog
-
-- [Scaling PostgreSQL](https://openai.com/index/scaling-postgresql/?ref=dailydev)
-- **PostgreSQL**：理解经典关系数据库内核（存储、事务、优化器、执行器）。
-- **DuckDB**：学习现代单机分析数据库（向量化执行、列存、SIMD）。
-- **ClickHouse** —— 学现代列存实现和高性能执行器。
-- **StarRocks 或 Apache Doris**：学习现代 MPP OLAP（分布式执行、Shuffle、Pipeline）。
-- **Snowflake/BigQuery**：了解云原生分析数据库的计算存储分离架构。
