@@ -62,3 +62,16 @@ code, pre, code span {
 .content table thead tr:hover {
     background: inherit !important;
 }
+/* Sidebar: part titles + SUMMARY --- separators */
+#sidebar .chapter > .part-title {
+    margin-top: 0.35rem;
+    font-weight: 600;
+    color: var(--sidebar-fg);
+    opacity: 0.95;
+}
+
+#sidebar .chapter > li.spacer {
+    margin: 0.55rem 0.75rem;
+    height: 0;
+    border-top: 1px solid color-mix(in srgb, var(--sidebar-fg) 28%, transparent);
+}

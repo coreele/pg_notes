@@ -2,12 +2,16 @@
 
 - [Overview](./index.md)
 
+---
+
 # Meta
 
 - [Architecture](./meta/00_arch.md)
 - [Code Structure](./meta/01_code.md)
 - [Compile](./meta/02_compile.md)
 - [Boot](./meta/03_boot.md)
+
+---
 
 # Traces
 
@@ -17,9 +21,13 @@
 - [Update](./traces/03_update.md)
 - [Crash Recovery](./traces/04_crash_recovery.md)
 
+---
+
 # Tools
 
 - [pageinspect](./tools/01_pageinspect.md)
+
+---
 
 # backend
 
