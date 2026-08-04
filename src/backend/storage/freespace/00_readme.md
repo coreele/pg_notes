@@ -33,9 +33,11 @@ node stores the max amount of free space on any of its children.
 
 For example:
 
+```text
     4
  4     2
 3 4   0 2    <- This level represents heap pages
+```
 
 We need two basic operations: search and update.
 
@@ -56,8 +58,8 @@ This data structure has a couple of nice properties:
   a choice, we can implement various strategies, like preferring pages closer
   to a given page, or spreading the load across the table.
 
-Higher-level routines that use FSM pages access them through the fsm_set_avail()
-and fsm_search_avail() functions. The interface to those functions hides the
+Higher-level routines that use FSM pages access them through the `fsm_set_avail()`
+and `fsm_search_avail()` functions. The interface to those functions hides the
 page's internal tree structure, treating the FSM page as a black box that has
 a certain number of "slots" for storing free space information.  (However,
 the higher routines have to be aware of the tree structure of the whole map.)
@@ -67,10 +69,12 @@ header takes some space on a page, the binary tree isn't perfect. That is,
 a few right-most leaf nodes are missing, and there are some useless non-leaf
 nodes at the right. So the tree looks something like this:
 
+```text
        0
    1       2
  3   4   5   6
 7 8 9 A B
+```
 
 where the numbers denote each node's position in the array.  Note that the
 tree is guaranteed complete above the leaf level; only some leaf nodes are
@@ -100,6 +104,7 @@ For example, assuming each FSM page can hold information about 4 pages (in
 reality, it holds (BLCKSZ - headers) / 2, or ~4000 with default BLCKSZ),
 we get a disk layout like this:
 
+```text
  0     <-- page 0 at level 2 (root page)
   0     <-- page 0 at level 1
    0     <-- page 0 at level 0
@@ -121,6 +126,7 @@ we get a disk layout like this:
    13
    14
    15
+```
 
 where the numbers are page numbers *at that level*, starting from 0.
 
@@ -128,7 +134,9 @@ To find the physical block # corresponding to leaf page n, we need to
 count the number of leaf and upper-level pages preceding page n.
 This turns out to be
 
+```
 y = n + (n / F + 1) + (n / F^2 + 1) + ... + 1
+```
 
 where F is the fanout (4 in the above example). The first term n is the number
 of preceding leaf pages, the second term is the number of pages at level 1,

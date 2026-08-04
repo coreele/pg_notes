@@ -23,12 +23,6 @@
 
 ---
 
-# Tools
-
-- [pageinspect](./tools/01_pageinspect.md)
-
----
-
 # backend
 
 - [tcop](./backend/tcop/tcop.md)
@@ -99,3 +93,9 @@
   - [resowner](./backend/utils/resowner/resowner.md)
     - [README](./backend/utils/resowner/00_readme.md)
     - [Overview](./backend/utils/resowner/01_overview.md)
+
+---
+
+# Tools
+
+- [pageinspect](./tools/01_pageinspect.md)

@@ -1,6 +1,6 @@
 # Overview
 
-PostgreSQL 内核学习笔记，目录镜像 `src/backend/` 源码结构；跨模块调用链见 `traces/`。笔记文件统一命名：`NN_topic.md`（两位序号 + 主题）。
+PostgreSQL 内核学习笔记，目录镜像 `src/backend/` 源码结构；跨模块调用链见 `traces/`。
 
 ---
 
