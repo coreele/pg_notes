@@ -97,6 +97,11 @@
 - What: Table AM / Index AM API
 - How: HOT & Heap Prune
 - what & when: GIN or GiST or BRIN
+- Case Study: pgvector Internals
+  - How: vector Type & Typmod Definition
+  - How: Distance Functions & SIMD Acceleration (AVX-512/NEON)
+  - How: IVFFlat Index Build & Search (Inverted File)
+  - How: HNSW Index Build & Search (Hierarchical Navigable Small World Graph)
 
 ## memory
 

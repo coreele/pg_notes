@@ -6,7 +6,7 @@
 
 - 每数据页对应 **1 个 category 字节**：空闲量 ≈ `cat * (BLCKSZ/256)`（向下取整）；假定空闲 < `BLCKSZ`，故 cat ∈ 0…255。
 - 不存精确字节数，以便 map 小、可树形搜索。
-- Heap 与多数索引（hash 除外）有 FSM；与 Visibility Map（`*_vm`）无关，VM 另篇。
+- Heap 与多数索引（hash 除外）有 FSM。
 
 源码：`src/backend/storage/freespace/`（`freespace.c`、`fsmpage.c`、[README](./00_readme.md)）。
 
@@ -21,6 +21,8 @@
 信息是**近似且可能过期**的：并发插入、粒度舍入、未及时 `RecordPageWithFreeSpace` 都会让「FSM 说够、页上不够」出现；API 契约要求调用方能处理该情况。
 
 ---
+
+
 
 ## 3. 页内结构：byte 数组上的 max 树
 
@@ -42,6 +44,8 @@
 
 ---
 
+
+
 ## 4. 跨页：FSM 页树
 
 数据页很多时，底层 FSM 页的根再作为上层 FSM 页的叶子，形成多层。`freespace.c` 负责地址换算与层间遍历；单页内算法在 `fsmpage.c`。
@@ -50,14 +54,18 @@
 
 ---
 
+
+
 ## 5. 对外 API 与插入路径
 
-| 函数 | 作用 |
-| --- | --- |
-| `GetPageWithFreeSpace(rel, spaceNeeded)` | `fsm_space_needed_to_cat` 后 `fsm_search`；命中返回 `BlockNumber`，否则 `InvalidBlockNumber` |
-| `RecordPageWithFreeSpace(rel, heapBlk, spaceAvail)` | 把该堆页的实测/估计空闲写回 FSM |
-| `RecordAndGetPageWithFreeSpace(...)` | 先更新「刚失败的那页」空闲，再搜下一候选（插入重试） |
-| `FreeSpaceMapVacuum` 等 | VACUUM 后批量校正 FSM（与清理路径配合） |
+
+| 函数                                                  | 作用                                                                                  |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `GetPageWithFreeSpace(rel, spaceNeeded)`            | `fsm_space_needed_to_cat` 后 `fsm_search`；命中返回 `BlockNumber`，否则 `InvalidBlockNumber` |
+| `RecordPageWithFreeSpace(rel, heapBlk, spaceAvail)` | 把该堆页的实测/估计空闲写回 FSM                                                                  |
+| `RecordAndGetPageWithFreeSpace(...)`                | 先更新「刚失败的那页」空闲，再搜下一候选（插入重试）                                                          |
+| `FreeSpaceMapVacuum` 等                              | VACUUM 后批量校正 FSM（与清理路径配合）                                                           |
+
 
 典型插入：
 
@@ -76,6 +84,8 @@ VACUUM / page prune 回收空间后应更新 FSM，否则空闲「看不见」�
 
 ---
 
+
+
 ## 6. 源码入口
 
 - 设计说明：`src/backend/storage/freespace/README`
@@ -86,13 +96,13 @@ VACUUM / page prune 回收空间后应更新 FSM，否则空闲「看不见」�
 
 ---
 
+
+
 ## 7. 小结
 
-1. FSM = 每数据页一字节空闲类别 + 页内/跨页 **max 树**，加速「找够大的页」。  
-2. 粒度与并发使结果不可盲信；选页后必须在堆页上复核。  
+1. FSM = 每数据页一字节空闲类别 + 页内/跨页 **max 树**，加速「找够大的页」。
+2. 粒度与并发使结果不可盲信；选页后必须在堆页上复核。
 3. 扩展与 VACUUM 都要维护 FSM，否则插入只见「假满」。
-
-Visibility Map（all-visible / all-frozen）见后续 VM 篇。
 
 ---
 

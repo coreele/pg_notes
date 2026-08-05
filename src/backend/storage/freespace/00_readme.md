@@ -190,16 +190,16 @@ the corruption so far as that page is concerned.
 
 VACUUM updates all the bottom-level FSM pages with the correct amount of free
 space on corresponding heap pages, as it proceeds through the heap.  This
-goes through fsm_set_avail(), so that the upper nodes on those pages are
-immediately updated.  Periodically, VACUUM calls FreeSpaceMapVacuum[Range]
+goes through `fsm_set_avail()`, so that the upper nodes on those pages are
+immediately updated.  Periodically, VACUUM calls `FreeSpaceMapVacuum[Range]`
 to propagate the new free-space info into the upper pages of the FSM tree.
 
 As a result when we write to the FSM we treat that as a hint and thus use
-MarkBufferDirtyHint() rather than MarkBufferDirty().  Every read here uses
-RBM_ZERO_ON_ERROR to bypass checksum mismatches and other verification
+`MarkBufferDirtyHint()` rather than `MarkBufferDirty()`.  Every read here uses
+`RBM_ZERO_ON_ERROR` to bypass checksum mismatches and other verification
 failures.  We'd operate correctly without the full page images that
-MarkBufferDirtyHint() provides, but they do decrease the chance of losing slot
-knowledge to RBM_ZERO_ON_ERROR.
+`MarkBufferDirtyHint()` provides, but they do decrease the chance of losing slot
+knowledge to `RBM_ZERO_ON_ERROR`.
 
 Relation extension is not WAL-logged.  Hence, after WAL replay, an on-disk FSM
 slot may indicate free space in PageIsNew() blocks that never reached disk.
