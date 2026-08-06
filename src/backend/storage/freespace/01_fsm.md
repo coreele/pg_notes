@@ -74,7 +74,7 @@ RelationGetBufferForTuple
   -> GetPageWithFreeSpace(spaceNeeded)
        命中 -> 锁页、复核空闲
             不够 -> RecordAndGetPageWithFreeSpace / 再试
-       未命中 -> 扩展 main fork，初始化新页
+       未命中 -> RelationAddBlocks 扩展 main fork，初始化新页
   -> 放入 tuple 后视情况 RecordPageWithFreeSpace
 ```
 
