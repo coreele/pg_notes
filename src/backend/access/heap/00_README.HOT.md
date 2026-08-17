@@ -64,10 +64,12 @@ update chain) its t_ctid field links forward to the newer version.
 
 For example:
 
+```
 	Index points to 1
 	lp [1]  [2]
 
 	[111111111]->[2222222222]
+```
 
 In the above diagram, the index points to line pointer 1, and tuple 1 is
 marked as HEAP_HOT_UPDATED.  Tuple 2 is a HOT tuple, meaning it has
@@ -86,25 +88,31 @@ be able to find tuple 2 in an index search.  HOT handles this by turning
 line pointer 1 into a "redirecting line pointer", which links to tuple 2
 but has no actual tuple attached.  This state of affairs looks like
 
+```
 	Index points to 1
 	lp [1]->[2]
 
 	[2222222222]
+```
 
 If now the row is updated again, to version 3, the page looks like this:
 
+```
 	Index points to 1
 	lp [1]->[2]  [3]
 
 	[2222222222]->[3333333333]
+```
 
 At some later time when no transaction can see tuple 2 in its snapshot,
 tuple 2 and its line pointer can be pruned entirely:
 
+```
 	Index points to 1
 	lp [1]------>[3]
 
 	[3333333333]
+```
 
 This is safe because no index entry points to line pointer 2.  Subsequent
 insertions into the page can now recycle both line pointer 2 and the

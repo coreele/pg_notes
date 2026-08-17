@@ -1,5 +1,12 @@
 # TODO
 
+## DOING
+
+HOT & Heap Prune
+VACUUM（lazy vacuum）
+Freeze / XID wraparound + VM 的 all-frozen
+Autovacuum
+
 ## meta
 
 - What: Architecture ✔
@@ -95,7 +102,7 @@
 - what: index types
 - why & how: nbtree ✔
 - What: Table AM / Index AM API
-- How: HOT & Heap Prune
+- How: HOT & Heap Prune ✔
 - what & when: GIN or GiST or BRIN
 - Case Study: pgvector Internals
   - How: vector Type & Typmod Definition

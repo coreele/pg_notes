@@ -38,7 +38,7 @@ PostgreSQL 默认表访问方法。上层只认 Table AM；本目录把 scan / D
 | **heapam_xlog.c** | 堆 WAL 的 redo。 |
 | **hio.c** | 堆页 I/O：`RelationGetBufferForTuple` 找空位，`RelationPutHeapTuple` 写入；协作 [FSM](../../storage/freespace/01_fsm.md)，必要时清 VM。 |
 | **heaptoast.c** | 元组太大则压缩/外置到 toast 表；删除时回收。insert/update 路径由 `heapam.c` 调用。 |
-| **pruneheap.c** | 页内剪枝与 [HOT](./00_README.HOT.md)：回收死元组、改 redirect/dead/unused。VACUUM 正式 prune；普通访问也可 `heap_page_prune_opt`。 |
+| **pruneheap.c** | 页内剪枝与 [HOT](./02_hot.md)：回收死元组、改 redirect/dead/unused。VACUUM 正式 prune；普通访问也可 `heap_page_prune_opt`。 |
 | **visibilitymap.c** | 每堆页 2 bit（all-visible / all-frozen）。VACUUM 置位以便跳页；DML 破坏「全可见」时清位。见 [VM](./01_vm.md)。 |
 | **vacuumlazy.c** | 并发 VACUUM：扫堆 → 收死 TID → 清索引 → 再清堆页 → 更新 VM / 截断。 |
 | **rewriteheap.c** | CLUSTER / 整表改写：在新堆重写元组，修正 update 链的 ctid。 |
@@ -75,7 +75,7 @@ PostgreSQL 默认表访问方法。上层只认 Table AM；本目录把 scan / D
 
 ---
 
-**相关笔记**: [VM](./01_vm.md) · [HOT](./00_README.HOT.md) · [Tuple Lock](./00_README.tuplock.md) · [Page Layout](../../storage/page/01_page_layout.md) · [FSM](../../storage/freespace/01_fsm.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md)
+**相关笔记**: [VM](./01_vm.md) · [HOT](./02_hot.md) · [README.HOT](./00_README.HOT.md) · [Tuple Lock](./00_README.tuplock.md) · [Page Layout](../../storage/page/01_page_layout.md) · [FSM](../../storage/freespace/01_fsm.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [trace: update](../../../traces/03_update.md)
 
 **最后更新**: 2026-08-17 | **适用版本**: PostgreSQL 15.x / 16.x / devel
 
