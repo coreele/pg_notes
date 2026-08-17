@@ -20,6 +20,7 @@
 - [Delete](./traces/02_delete.md)
 - [Update](./traces/03_update.md)
 - [Crash Recovery](./traces/04_crash_recovery.md)
+- [VM](./traces/05_vm.md)
 
 ---
 
@@ -39,6 +40,9 @@
   - [Pipeline](./backend/executor/01_pipeline.md)
   - [State](./backend/executor/02_state.md)
 - [access](./backend/access/access.md)
+  - [heap](./backend/access/heap/heap.md)
+    - [README](./backend/access/heap/00_readme.md)
+    - [Visibility Map](./backend/access/heap/01_vm.md)
   - [nbtree](./backend/access/nbtree/nbtree.md)
     - [README](./backend/access/nbtree/00_readme.md)
     - [Plan](./backend/access/nbtree/01_plan.md)

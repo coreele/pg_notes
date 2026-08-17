@@ -91,7 +91,7 @@
 
 ## access
 
-- why & how: VM
+- why & how: VM ---
 - what: index types
 - why & how: nbtree ✔
 - What: Table AM / Index AM API
@@ -119,7 +119,7 @@
 - What: Page Layout ✔
 - What: Page Checksums (README) ✔
 - What: Buffer Manager Overview ✔
-- why & how: FSM ---
+- why & how: FSM ✔
 - what & when: Deduplication
 - why & how: VACUUM
 - Why & How: TOAST
@@ -137,6 +137,7 @@
 - How: Delete ✔
 - How: Update ✔
 - How: Crash Recovery ✔
+- How: VM ✔
 
 ## others
 
