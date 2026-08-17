@@ -31,8 +31,10 @@
 - [parser](./backend/parser/parser.md)
   - [Overview](./backend/parser/00_overview.md)
   - [Analyze](./backend/parser/01_analyze.md)
+<!--
 - [optimizer](./backend/optimizer/optimizer.md)
   - [Overview](./backend/optimizer/00_overview.md)
+-->
 - [executor](./backend/executor/executor.md)
   - [Overview](./backend/executor/00_overview.md)
   - [Pipeline](./backend/executor/01_pipeline.md)
@@ -65,10 +67,6 @@
     - [WAL Recovery](./backend/access/transam/14_wal_recovery.md)
     - [Crash Recovery Redo Path](./backend/access/transam/15_crash_recovery_redo.md)
     - [Base Backup](./backend/access/transam/16_base_backup.md)
-- [replication](./backend/replication/replication.md)
-  - [README](./backend/replication/00_readme.md)
-  - [Streaming Replication & Log Decoding](./backend/replication/01_streaming_replication.md)
-  - [Replication Slot & Timeline](./backend/replication/02_replication_slot_timeline.md)
 - [storage](./backend/storage/storage.md)
   - [page](./backend/storage/page/page.md)
     - [README](./backend/storage/page/00_readme.md)
@@ -96,6 +94,10 @@
   - [resowner](./backend/utils/resowner/resowner.md)
     - [README](./backend/utils/resowner/00_readme.md)
     - [Overview](./backend/utils/resowner/01_overview.md)
+- [replication](./backend/replication/replication.md)
+  - [README](./backend/replication/00_readme.md)
+  - [Streaming Replication & Log Decoding](./backend/replication/01_streaming_replication.md)
+  - [Replication Slot & Timeline](./backend/replication/02_replication_slot_timeline.md)
 
 ---
 

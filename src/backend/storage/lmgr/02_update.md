@@ -109,7 +109,7 @@ finish_xact_command
 							VirtualXactLockTableCleanup
 ```
 
-### 完整过程
+### 6. call stack
 
 ```cpp
 exec_simple_query

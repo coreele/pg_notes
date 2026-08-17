@@ -78,7 +78,7 @@ finish_xact_command
     xact_started = false;
 ```
 
-## 完整过程
+## call stack
 
 ```cpp
 start_xact_command
@@ -270,6 +270,6 @@ rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/102BEB78,
 
 ## 延伸阅读
 
-- WAL 原理图：`../backend/access/transam/assets/draw_wal_principle.md`
-- 恢复：`../backend/access/transam/14_wal_recovery.md`
-- 事务概览：`../backend/access/transam/01_overview.md`
+- [WAL 原理图](../backend/access/transam/assets/draw_wal_principle.md)
+- [WAL Recovery](../backend/access/transam/14_wal_recovery.md)
+- [事务概览](../backend/access/transam/01_overview.md)
