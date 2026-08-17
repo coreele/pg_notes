@@ -66,7 +66,6 @@ explain select * from tb where a = 5000 or a = 8000;
 ```
 
 ```sql
-
 explain select * from tb where a in (5000, 8000);
                            QUERY PLAN
 ----------------------------------------------------------------
@@ -74,6 +73,10 @@ explain select * from tb where a in (5000, 8000);
    Index Cond: (a = ANY ('{5000,8000}'::integer[]))
 ```
 
-why different with `a in(5000, 8000)`?
+`OR` 两个等值：两次 Bitmap Index Scan，再 `BitmapOr` + Bitmap Heap Scan。  
+`IN` / `= ANY`：收成一个 `ScalarArrayOpExpr`，B-Tree **一次** Index Scan 内多键下跳（skip array keys），不必拆成 Bitmap。
 
-B-Tree 索引的多键下跳（Multi-Index Scan / Multi-scan） | ScalarArrayOpExpr Index Optimization
+---
+
+**相关笔记**: [nbtree](./nbtree.md) · [Page](./02_page.md) · [Code](./03_code.md) · [VM](../heap/01_vm.md) · [trace: VM](../../../traces/05_vm.md)
+

@@ -91,7 +91,7 @@
 
 ## access
 
-- why & how: VM ---
+- why & how: VM ✔
 - what: index types
 - why & how: nbtree ✔
 - What: Table AM / Index AM API
