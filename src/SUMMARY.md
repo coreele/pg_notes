@@ -45,6 +45,7 @@
     - [HOT](./backend/access/heap/02_hot.md)
     - [Tuple Lock](./backend/access/heap/00_README.tuplock.md)
     - [Visibility Map](./backend/access/heap/01_vm.md)
+    - [Lazy VACUUM](./backend/access/heap/03_vacuumlazy.md)
   - [nbtree](./backend/access/nbtree/nbtree.md)
     - [README](./backend/access/nbtree/00_readme.md)
     - [Plan](./backend/access/nbtree/01_plan.md)

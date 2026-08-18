@@ -1,0 +1,205 @@
+# Why & How: Lazy VACUUM
+
+参考文档：
+
+- [The Internals of PostgreSQL: 6 VACUUM Processing](https://www.interdb.jp/pg/pgsql06/index.html)
+
+本文只覆盖 lazy vacuum（死元组回收与索引清理）。Freeze / wraparound、autovacuum、`VACUUM FULL` 见该章其余小节。
+
+## 1. 定义
+
+**Lazy vacuum**：在 `ShareUpdateExclusiveLock` 下按页清理堆与索引，不重写整表、不更换 `relfilenode`。普通 `VACUUM` 与 autovacuum worker 均走此路径。
+
+源码：`commands/vacuum.c` → `heap_vacuum_rel`（`vacuumlazy.c`）。对照：[HOT](./02_hot.md) prune、[VM](./01_vm.md)、[FSM](../../storage/freespace/01_fsm.md)。
+
+| 路径 | 锁 | 作用 | 文件 |
+| --- | --- | --- | --- |
+| prune | page cleanup lock | 仅当前页；可回收 HOT 死版本；带索引项的死 lp 标 `LP_DEAD` | `pruneheap.c` |
+| lazy `VACUUM` | `ShareUpdateExclusiveLock` | prune + 清理索引 + `LP_DEAD`→`LP_UNUSED` + 置 VM / 记 FSM；仅表尾连续空页可截断 | `vacuumlazy.c` |
+| `VACUUM FULL` | `AccessExclusiveLock` | 可见元组写入新文件（`rewriteheap`），丢弃旧 `relfilenode` | `rewriteheap.c` |
+
+`ShareUpdateExclusiveLock` 与 `RowExclusiveLock` 不冲突，SELECT / INSERT / UPDATE / DELETE 可并发；与另一 `VACUUM` 或 `CREATE INDEX CONCURRENTLY` 冲突。见 [Lock Overview](../../storage/lmgr/01_overview.md)。
+
+---
+
+## 2. 为何需要
+
+非覆盖 MVCC 下，`DELETE` / `UPDATE` 只写入 `t_xmax`，旧版本仍占用堆页。见 [delete](../../../traces/02_delete.md)。
+
+索引项保存堆 TID `(block, lp)`，`lp` 为页内 line pointer 编号。槽标为 `LP_UNUSED` 后，后续 `INSERT` 可复用同一编号写入另一元组。若索引仍保留该 TID，Index Scan 将解引用到错误元组。因此：**存在指向该 lp 的索引项时，不得回收该槽。**
+
+合法顺序：标 `LP_DEAD`（保留编号、禁止复用；元组体可已由 prune 回收）→ 删除索引中对应 ctid → 再改为 `LP_UNUSED`。lazy vacuum 对堆扫描两遍、其间执行索引 vacuum，即实现该顺序。
+
+HOT 中间版本无独立索引项，索引仅指向 chain root。prune 回收中间版本并将 root 改为 `LP_REDIRECT` 后，原 TID 仍有效，无需先清理索引。cold update / DELETE 的旧版本占用带索引项的 root，prune 至多标 `LP_DEAD`，须完成索引清理后才能改为 `LP_UNUSED`。
+
+---
+
+## 3. 可回收条件：OldestXmin
+
+VACUUM 不以当前会话快照为准，而要求元组对**所有仍可能引用它的快照**均不可见。
+
+回收地平线由 ProcArray 计算：`ComputeXidHorizons` / `GetOldestXmin`（见 [transam README](../transam/00_readme.md)）：
+
+- 已提交的 `xmax` **严格小于** `OldestXmin` → 可回收。
+- 未结束事务、复制槽、预备事务会推迟该地平线，扫描后仍无法回收。
+
+判定函数为 `HeapTupleSatisfiesVacuum`（`heapam_visibility.c`），而非查询路径的 `HeapTupleSatisfiesMVCC`。
+
+---
+
+## 4. 两阶段
+
+```text
+ExecVacuum
+  vacuum
+    vacuum_rel                          /* commands/vacuum.c */
+      table_relation_vacuum
+        heapam_relation_vacuum
+          heap_vacuum_rel               /* vacuumlazy.c */
+            vacuum_get_cutoffs
+            lazy_scan_heap
+              lazy_vacuum_all_indexes   /* ambulkdelete; when dead_items full */
+              lazy_vacuum_heap_rel      /* LP_DEAD -> LP_UNUSED */
+            lazy_vacuum_all_indexes
+            lazy_vacuum_heap_rel
+            lazy_cleanup_all_indexes    /* ambulkvacuumcleanup */
+            lazy_truncate_heap
+            vac_update_relstats
+```
+
+死 TID 集合受 `maintenance_work_mem` 限制（PG 16+ 为 `TidStore`）。缓冲满则中途执行一轮 `lazy_vacuum_all_indexes` + `lazy_vacuum_heap_rel`，然后继续扫描。大表上该两阶段会重复多次。
+
+### `lazy_scan_heap`
+
+按块号扫描堆。VM 已标记 **all-visible** 的页，普通 vacuum **跳过**（无待回收 dead tuple）。以 freeze 为目的的 aggressive 扫描除外。
+
+对未跳过的页：
+
+1. 获取 cleanup lock（与普通读 pin 互斥；失败则等待或稍后重试）。
+2. `heap_page_prune`：回收 HOT 死版本；将仍被索引引用的死元组标为 `LP_DEAD`（槽保留，`lp_off` 无意义）。
+3. 将本页全部 `LP_DEAD` 的 `(blk, offset)` 记入死 TID 集合。
+4. 若页内已无 dead 且对所有快照可见 → 置 `PD_ALL_VISIBLE` 并 `visibilitymap_set`（WAL：`log_heap_visible`）。见 [VM](./01_vm.md)。
+5. `RecordPageWithFreeSpace` 更新 [FSM](../../storage/freespace/01_fsm.md)。
+
+第一遍不得将 `LP_DEAD` 改为 `LP_UNUSED`。
+
+### `lazy_vacuum_all_indexes`
+
+对每个索引调用 `ambulkdelete`（nbtree 扫描叶页，删除 `ctid ∈ 死 TID 集` 的项）。无索引或本轮无死 TID 则跳过。
+
+`VACUUM (INDEX_CLEANUP OFF)` 跳过此步时，堆页上的 `LP_DEAD` 保留，槽不可复用。
+
+### `lazy_vacuum_heap_rel`
+
+再次访问含死 TID 的堆页，将对应 `LP_DEAD` 改为 `LP_UNUSED`。此后 `INSERT` 可复用该 OffsetNumber（优先占用空槽，而非扩展 `pd_lower`）。
+
+cold update 见 [update trace](../../../traces/03_update.md)：索引中 `(0,1)` 删除之后，lp 1 才可改为 `LP_UNUSED`。HOT 在 vacuum 后常见 `LP_REDIRECT`，索引仍指向 root。
+
+### 收尾
+
+- `lazy_cleanup_all_indexes`：`ambulkvacuumcleanup`（b-tree 回收空页、更新 `reltuples`）。
+- `lazy_truncate_heap`：表尾连续空页时缩小文件；并发扫描可能导致截断放弃。文件中部空洞不会消失。
+- `vac_update_relstats`：写入 `pg_class` / `pgstat`。
+
+---
+
+## 5. 页内三种 lp
+
+`lp_flags`：`0=UNUSED`，`1=NORMAL`，`2=REDIRECT`，`3=DEAD`。
+
+```text
+DELETE / cold UPDATE, committed, not yet vacuumed
+  Index --> lp[1] LP_NORMAL     /* old; xmax committed */
+            lp[2] LP_NORMAL     /* new (cold only) */
+
+prune, indexes not vacuumed
+  Index --> lp[1] LP_DEAD       /* tuple body may be gone; slot held */
+            lp[2] LP_NORMAL
+
+after index vacuum
+            lp[1] LP_UNUSED
+            lp[2] LP_NORMAL
+
+HOT UPDATE after vacuum
+  Index --> lp[1] LP_REDIRECT --> lp[2] LP_NORMAL  /* HEAP_ONLY */
+```
+
+---
+
+## 6. 锁、并发与代价
+
+| 对象 | 锁 | 作用 |
+| --- | --- | --- |
+| 表 | `ShareUpdateExclusiveLock` | 排斥第二个 VACUUM / 部分 DDL；允许 DML |
+| 堆页 | cleanup lock | prune、修改 lp、置 `PD_ALL_VISIBLE` 时独占该页 |
+| 索引页 | 各 AM 的 vacuum 锁 | 删除死索引项 |
+
+DML 与 vacuum 并发时，本轮只回收扫描时已满足条件的死元组；此后产生的死元组留待下一轮。置 VM 须持有堆页锁并复核，避免刚标记 all-visible 即被 INSERT 修改。
+
+`vacuum_cost_delay` / `vacuum_cost_limit`：按读页、写页、命中脏页累计费用，超过限额则 `sleep`。autovacuum 使用独立的 cost 参数。
+
+PG 11+ 可对索引 vacuum 启动并行 worker（`min_parallel_index_scan_size` 等）；堆扫描仍由 leader 执行。
+
+---
+
+## 7. 观测
+
+关闭表级 autovacuum，避免 worker 在观测前完成 prune / vacuum。
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pageinspect;
+
+DROP TABLE IF EXISTS tb;
+CREATE TABLE tb (a int PRIMARY KEY, b int) WITH (autovacuum_enabled = off);
+INSERT INTO tb VALUES (1, 10);
+UPDATE tb SET a = 2;          -- cold: indexed column changed
+SELECT lp, lp_flags, t_xmin, t_xmax, t_ctid
+FROM heap_page_items(get_raw_page('tb', 0));
+-- lp 1 remains LP_NORMAL; xmax = updater xid
+
+SELECT itemoffset, ctid FROM bt_page_items('tb_pkey', 1);
+
+VACUUM tb;
+
+SELECT lp, lp_flags, t_xmin, t_xmax, t_ctid
+FROM heap_page_items(get_raw_page('tb', 0));
+-- lp 1 = LP_UNUSED(0); only the new version remains
+
+SELECT itemoffset, ctid FROM bt_page_items('tb_pkey', 1);
+-- index tuple pointing to (0,1) is gone
+```
+
+HOT：仅修改 `b`，`VACUUM` 后 lp 1 为 `LP_REDIRECT`，主键仍指向 `(0,1)`。见 [update trace](../../../traces/03_update.md)。
+
+`VACUUM VERBOSE tb;` 输出扫描页数、跳过的 all-visible 页、回收行数及各索引删除项数。
+
+---
+
+## 8. 源码入口
+
+- `commands/vacuum.c`：`ExecVacuum`、`vacuum`、`vacuum_rel`
+- `access/heap/vacuumlazy.c`：`heap_vacuum_rel`、`lazy_scan_heap`、`lazy_vacuum_all_indexes`、`lazy_vacuum_heap_rel`
+- `heapam_visibility.c`：`HeapTupleSatisfiesVacuum`
+- `pruneheap.c`：`heap_page_prune`
+- VM：`visibilitymap_set` / `log_heap_visible`
+- FSM：`RecordPageWithFreeSpace`
+- `access/index/indexam.c`：`index_bulk_delete` → nbtree `btbulkdelete`
+- `heapam_handler.c`：`heapam_relation_vacuum`
+- `lock.h`：`ShareUpdateExclusiveLock`
+
+15 / 16 间函数有拆分（16+ 死 TID 使用 `TidStore`，prune 与 freeze 更常共用同一页函数），阶段划分不变。
+
+---
+
+## 9. 小结
+
+1. Lazy vacuum 为并发两阶段：扫描堆收集 `LP_DEAD` 的 TID → 清理索引 → 将槽改为 `LP_UNUSED`；并完成 prune、置 VM、更新 FSM。
+2. 仍被索引引用的 lp 不能仅由 prune 释放；HOT 中间版本无独立索引项，可在页内回收。
+3. 不更换文件、不消除中部空洞；截断仅发生在表尾连续空页。整表缩小使用 `VACUUM FULL`。
+4. 无法回收通常是 OldestXmin 被长事务或复制槽推迟，而非 VACUUM 未执行。
+
+---
+
+**相关笔记**: [Heap AM](./heap.md) · [HOT](./02_hot.md) · [VM](./01_vm.md) · [FSM](../../storage/freespace/01_fsm.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [Lock Overview](../../storage/lmgr/01_overview.md) · [trace: delete](../../../traces/02_delete.md) · [trace: update](../../../traces/03_update.md)
+
+**最后更新**: 2026-08-18 | **适用版本**: PostgreSQL 15.x / 16.x / devel

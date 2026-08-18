@@ -2,8 +2,6 @@
 
 ## DOING
 
-HOT & Heap Prune
-VACUUM（lazy vacuum）
 Freeze / XID wraparound + VM 的 all-frozen
 Autovacuum
 
@@ -128,7 +126,7 @@ Autovacuum
 - What: Buffer Manager Overview ✔
 - why & how: FSM ✔
 - what & when: Deduplication
-- why & how: VACUUM
+- why & how: VACUUM（lazy） ✔
 - Why & How: TOAST
 - How: Autovacuum
 - What: Data Checksums & Sync Method (vs FPW)

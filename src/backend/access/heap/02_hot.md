@@ -121,6 +121,6 @@ vacuumlazy -> heap_page_prune /* 无空闲门槛，扫到就 prune */
 
 ---
 
-**相关笔记**: [Heap AM](./heap.md) · [README.HOT](./00_README.HOT.md) · [VM](./01_vm.md) · [Page Layout](../../storage/page/01_page_layout.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [trace: update](../../../traces/03_update.md)
+**相关笔记**: [Heap AM](./heap.md) · [README.HOT](./00_README.HOT.md) · [VM](./01_vm.md) · [Lazy VACUUM](./03_vacuumlazy.md) · [Page Layout](../../storage/page/01_page_layout.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [trace: update](../../../traces/03_update.md)
 
 **最后更新**: 2026-08-17 | **适用版本**: PostgreSQL 15.x / 16.x / devel
