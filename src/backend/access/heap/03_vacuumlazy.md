@@ -4,7 +4,7 @@
 
 - [The Internals of PostgreSQL: 6 VACUUM Processing](https://www.interdb.jp/pg/pgsql06/index.html)
 
-本文只覆盖 lazy vacuum（死元组回收与索引清理）。Freeze / wraparound、autovacuum、`VACUUM FULL` 见该章其余小节。
+本文只覆盖 lazy vacuum（死元组回收与索引清理）。Freeze / wraparound、autovacuum、`VACUUM FULL` / `CLUSTER` 见该章其余小节。
 
 ## 1. 定义
 
@@ -16,21 +16,44 @@
 | --- | --- | --- | --- |
 | prune | page cleanup lock | 仅当前页；可回收 HOT 死版本；带索引项的死 lp 标 `LP_DEAD` | `pruneheap.c` |
 | lazy `VACUUM` | `ShareUpdateExclusiveLock` | prune + 清理索引 + `LP_DEAD`→`LP_UNUSED` + 置 VM / 记 FSM；仅表尾连续空页可截断 | `vacuumlazy.c` |
-| `VACUUM FULL` | `AccessExclusiveLock` | 可见元组写入新文件（`rewriteheap`），丢弃旧 `relfilenode` | `rewriteheap.c` |
+| `VACUUM FULL` | `AccessExclusiveLock` | 按堆扫描顺序 `rewriteheap`，新 `relfilenode`，重建索引 | `cluster.c` / `rewriteheap.c` |
+| `CLUSTER tb` | `AccessExclusiveLock` | 按索引顺序 `rewriteheap`，新 `relfilenode`，重建索引 | `cluster.c` / `rewriteheap.c` |
 
-`ShareUpdateExclusiveLock` 与 `RowExclusiveLock` 不冲突，SELECT / INSERT / UPDATE / DELETE 可并发；与另一 `VACUUM` 或 `CREATE INDEX CONCURRENTLY` 冲突。见 [Lock Overview](../../storage/lmgr/01_overview.md)。
+PG 9.0 起 `VACUUM FULL` 不再在原文件内搬元组，而是调用 `cluster_rel()`，与 `CLUSTER` 共用 `rewriteheap`：将仍需保留的元组写入新堆文件、重建全部索引、切换 `relfilenode` 后删除旧文件。二者都能消除中部空洞并缩小关系文件。
+
+差别在**扫描顺序与目的**：
+
+- `VACUUM FULL`：`vacuum_rel` 在 `VACOPT_FULL` 时调用 `cluster_rel`（不走 `heap_vacuum_rel`），按旧堆页顺序复制，不要求索引；目标是收缩膨胀。
+- `CLUSTER tb` / `CLUSTER tb USING idx`：按指定索引（或 `pg_index.indisclustered` 记录的上次聚簇索引）顺序复制，使堆物理顺序接近该索引，Index Scan 更易顺序读盘；收缩是副作用。无可用索引时 `CLUSTER` 不能执行。
+
+二者均持 `AccessExclusiveLock`，阻塞全部读写。见 [Lock Overview](../../storage/lmgr/01_overview.md)。
+
+`ShareUpdateExclusiveLock` 与 `RowExclusiveLock` 不冲突，SELECT / INSERT / UPDATE / DELETE 可与 lazy `VACUUM` 并发；与另一 `VACUUM` 或 `CREATE INDEX CONCURRENTLY` 冲突。
 
 ---
 
 ## 2. 为何需要
 
+LP 的四种状态
+
+普通 / cold 旧版本:    UNUSED → NORMAL [→ DEAD] → UNUSED
+HOT 根（对外 TID）:    UNUSED → NORMAL → REDIRECT [→ DEAD] → UNUSED
+HOT 中间（HEAP_ONLY）: UNUSED → NORMAL → UNUSED
+
 非覆盖 MVCC 下，`DELETE` / `UPDATE` 只写入 `t_xmax`，旧版本仍占用堆页。见 [delete](../../../traces/02_delete.md)。
 
-索引项保存堆 TID `(block, lp)`，`lp` 为页内 line pointer 编号。槽标为 `LP_UNUSED` 后，后续 `INSERT` 可复用同一编号写入另一元组。若索引仍保留该 TID，Index Scan 将解引用到错误元组。因此：**存在指向该 lp 的索引项时，不得回收该槽。**
+合法顺序：
+1. 遍历 heap 标 `LP_DEAD`（保留编号、禁止复用；元组体可已由 prune 回收）：释放 tuple 空间同时收集待清除的 tuple tid
+2. 遍历 index 删除 1 收集的 tids 对应的索引项
+3. heap 中 LP 改为 `LP_UNUSED` 允许 LP 复用
 
-合法顺序：标 `LP_DEAD`（保留编号、禁止复用；元组体可已由 prune 回收）→ 删除索引中对应 ctid → 再改为 `LP_UNUSED`。lazy vacuum 对堆扫描两遍、其间执行索引 vacuum，即实现该顺序。
+> 为什么必须按照 `heap -> index -> heap` 的顺序处理，而不是直接处理 `index -> heap` 或者 `heap -> index`？
+> 1. 如果 heap -> index 顺序直接清理 tuple 标记为 LP_UNUNSED，并发场景该 tuple 空间可能被复用，导致 index 指向非法数据
+> 2. 如果 index -> heap 顺序首先清理 index 同时清理其对应的可能已经失效的 tuple，逐个回表检查是否 DEAD 处理效率太低
 
-HOT 中间版本无独立索引项，索引仅指向 chain root。prune 回收中间版本并将 root 改为 `LP_REDIRECT` 后，原 TID 仍有效，无需先清理索引。cold update / DELETE 的旧版本占用带索引项的 root，prune 至多标 `LP_DEAD`，须完成索引清理后才能改为 `LP_UNUSED`。
+
+- HOT 中间版本无独立索引项，索引仅指向 chain root。prune 回收中间版本并将 root 改为 `LP_REDIRECT` 后，原 TID 仍有效，无需先清理索引。
+- cold update / DELETE 的旧版本占用带索引项的 root，prune 至多标 `LP_DEAD`，须完成索引清理后才能改为 `LP_UNUSED`。
 
 ---
 
@@ -185,6 +208,7 @@ HOT：仅修改 `b`，`VACUUM` 后 lp 1 为 `LP_REDIRECT`，主键仍指向 `(0,
 - FSM：`RecordPageWithFreeSpace`
 - `access/index/indexam.c`：`index_bulk_delete` → nbtree `btbulkdelete`
 - `heapam_handler.c`：`heapam_relation_vacuum`
+- `commands/cluster.c`：`cluster_rel`（`VACUUM FULL` 与 `CLUSTER`）
 - `lock.h`：`ShareUpdateExclusiveLock`
 
 15 / 16 间函数有拆分（16+ 死 TID 使用 `TidStore`，prune 与 freeze 更常共用同一页函数），阶段划分不变。
@@ -195,7 +219,7 @@ HOT：仅修改 `b`，`VACUUM` 后 lp 1 为 `LP_REDIRECT`，主键仍指向 `(0,
 
 1. Lazy vacuum 为并发两阶段：扫描堆收集 `LP_DEAD` 的 TID → 清理索引 → 将槽改为 `LP_UNUSED`；并完成 prune、置 VM、更新 FSM。
 2. 仍被索引引用的 lp 不能仅由 prune 释放；HOT 中间版本无独立索引项，可在页内回收。
-3. 不更换文件、不消除中部空洞；截断仅发生在表尾连续空页。整表缩小使用 `VACUUM FULL`。
+3. 不更换文件、不消除中部空洞；截断仅发生在表尾连续空页。整表缩小走 `rewriteheap`：`VACUUM FULL`（堆序）或 `CLUSTER`（索引序）。
 4. 无法回收通常是 OldestXmin 被长事务或复制槽推迟，而非 VACUUM 未执行。
 
 ---
