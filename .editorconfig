@@ -1,16 +1,31 @@
-# https://editorconfig.org
+# 顶层配置，停止向上查找其他 editorconfig
 root = true
 
+# 所有文件通用
 [*]
 charset = utf-8
-end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
 indent_style = space
+indent_size = 4
+tab_width = 4
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 120
+
+# Makefile 必须用 tab
+[Makefile]
+indent_style = tab
+indent_size = 4
+tab_width = 4
+
+# JSON、YAML 常用 2 缩进
+[*.{json,yml,yaml}]
 indent_size = 2
 
+# HTML、CSS、JS、TS、Vue、JSX 常用 2 缩进
+[*.{html,css,scss,js,jsx,ts,tsx,vue}]
+indent_size = 2
+
+# Markdown 不自动删行尾空格（表格、换行需要）
 [*.md]
 trim_trailing_whitespace = false
-
-[*.{bat,cmd,ps1}]
-end_of_line = crlf

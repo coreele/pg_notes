@@ -1,4 +1,4 @@
-# Why & How: Lazy VACUUM
+# Lazy VACUUM
 
 参考文档：
 
@@ -21,7 +21,7 @@
 
 PG 9.0 起 `VACUUM FULL` 不再在原文件内搬元组，而是调用 `cluster_rel()`，与 `CLUSTER` 共用 `rewriteheap`：将仍需保留的元组写入新堆文件、重建全部索引、切换 `relfilenode` 后删除旧文件。二者都能消除中部空洞并缩小关系文件。
 
-差别在**扫描顺序与目的**：
+`VACUUM FULL` 和 `CLUSTER` 区别:
 
 - `VACUUM FULL`：`vacuum_rel` 在 `VACOPT_FULL` 时调用 `cluster_rel`（不走 `heap_vacuum_rel`），按旧堆页顺序复制，不要求索引；目标是收缩膨胀。
 - `CLUSTER tb` / `CLUSTER tb USING idx`：按指定索引（或 `pg_index.indisclustered` 记录的上次聚簇索引）顺序复制，使堆物理顺序接近该索引，Index Scan 更易顺序读盘；收缩是副作用。无可用索引时 `CLUSTER` 不能执行。
@@ -36,24 +36,31 @@ PG 9.0 起 `VACUUM FULL` 不再在原文件内搬元组，而是调用 `cluster_
 
 LP 的四种状态
 
+```
+/*
+ * lp_flags has these possible states.  An UNUSED line pointer is available
+ * for immediate re-use, the other states are not.
+ */
+#define LP_UNUSED		0		/* unused (should always have lp_len=0) */
+#define LP_NORMAL		1		/* used (should always have lp_len>0) */
+#define LP_REDIRECT	2		/* HOT redirect (should have lp_len=0) */
+#define LP_DEAD			3		/* dead, may or may not have storage */
+```
+
 普通 / cold 旧版本:    UNUSED → NORMAL [→ DEAD] → UNUSED
 HOT 根（对外 TID）:    UNUSED → NORMAL → REDIRECT [→ DEAD] → UNUSED
 HOT 中间（HEAP_ONLY）: UNUSED → NORMAL → UNUSED
 
-非覆盖 MVCC 下，`DELETE` / `UPDATE` 只写入 `t_xmax`，旧版本仍占用堆页。见 [delete](../../../traces/02_delete.md)。
+VACUUM 合法顺序：
 
-合法顺序：
-1. 遍历 heap 标 `LP_DEAD`（保留编号、禁止复用；元组体可已由 prune 回收）：释放 tuple 空间同时收集待清除的 tuple tid
+1. 遍历 heap 标 `LP_DEAD`（保留编号、禁止复用；元组体可已由 prune 回收）：收集待清除的 tuple tid
 2. 遍历 index 删除 1 收集的 tids 对应的索引项
 3. heap 中 LP 改为 `LP_UNUSED` 允许 LP 复用
 
-> 为什么必须按照 `heap -> index -> heap` 的顺序处理，而不是直接处理 `index -> heap` 或者 `heap -> index`？
+WHY: 为什么必须按照 `heap -> index -> heap` 的顺序处理，而不是直接处理 `index -> heap` 或者 `heap -> index`？
+
 > 1. 如果 heap -> index 顺序直接清理 tuple 标记为 LP_UNUNSED，并发场景该 tuple 空间可能被复用，导致 index 指向非法数据
 > 2. 如果 index -> heap 顺序首先清理 index 同时清理其对应的可能已经失效的 tuple，逐个回表检查是否 DEAD 处理效率太低
-
-
-- HOT 中间版本无独立索引项，索引仅指向 chain root。prune 回收中间版本并将 root 改为 `LP_REDIRECT` 后，原 TID 仍有效，无需先清理索引。
-- cold update / DELETE 的旧版本占用带索引项的 root，prune 至多标 `LP_DEAD`，须完成索引清理后才能改为 `LP_UNUSED`。
 
 ---
 
@@ -67,6 +74,27 @@ VACUUM 不以当前会话快照为准，而要求元组对**所有仍可能引�
 - 未结束事务、复制槽、预备事务会推迟该地平线，扫描后仍无法回收。
 
 判定函数为 `HeapTupleSatisfiesVacuum`（`heapam_visibility.c`），而非查询路径的 `HeapTupleSatisfiesMVCC`。
+
+```c
+exec_simple_query
+    PortalRun | PortalRunMulti | PortalRunUtility
+        ProcessUtility | standard_ProcessUtility
+            ExecVacuum  | vacuum | vacuum_rel
+                table_relation_vacuum
+                  heap_vacuum_rel
+                    vacuum_get_cutoffs
+                        GetOldestNonRemovableTransactionId
+                            ComputeXidHorizons
+                    dead_items_alloc
+                    lazy_scan_heap /* workhorse function for VACUUM */
+                        for (blkno = 0; blkno < rel_pages; blkno++)
+                            lazy_scan_prune /* Prune, freeze, and count tuples */
+                            lazy_vacuum /* index vacuuming and heap vacuuming */
+                                lazy_vacuum_all_indexes
+                                lazy_vacuum_heap_rel
+                            FreeSpaceMapVacuumRange
+
+```
 
 ---
 
@@ -126,11 +154,9 @@ cold update 见 [update trace](../../../traces/03_update.md)：索引中 `(0,1)`
 
 ---
 
-## 5. 页内三种 lp
 
-`lp_flags`：`0=UNUSED`，`1=NORMAL`，`2=REDIRECT`，`3=DEAD`。
 
-```text
+```
 DELETE / cold UPDATE, committed, not yet vacuumed
   Index --> lp[1] LP_NORMAL     /* old; xmax committed */
             lp[2] LP_NORMAL     /* new (cold only) */
