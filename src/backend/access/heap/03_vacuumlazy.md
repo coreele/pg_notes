@@ -43,7 +43,7 @@ LP 的四种状态
  */
 #define LP_UNUSED		0		/* unused (should always have lp_len=0) */
 #define LP_NORMAL		1		/* used (should always have lp_len>0) */
-#define LP_REDIRECT	2		/* HOT redirect (should have lp_len=0) */
+#define LP_REDIRECT	    2		/* HOT redirect (should have lp_len=0) */
 #define LP_DEAD			3		/* dead, may or may not have storage */
 ```
 
@@ -93,6 +93,7 @@ exec_simple_query
                                 lazy_vacuum_all_indexes
                                 lazy_vacuum_heap_rel
                             FreeSpaceMapVacuumRange
+                        lazy_cleanup_all_indexes /* Do final index cleanup (call each index's amvacuumcleanup routine) */
 
 ```
 
