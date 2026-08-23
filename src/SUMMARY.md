@@ -31,10 +31,12 @@
 - [parser](./backend/parser/parser.md)
   - [Overview](./backend/parser/00_overview.md)
   - [Analyze](./backend/parser/01_analyze.md)
+
 <!--
 - [optimizer](./backend/optimizer/optimizer.md)
   - [Overview](./backend/optimizer/00_overview.md)
 -->
+
 - [executor](./backend/executor/executor.md)
   - [Overview](./backend/executor/00_overview.md)
   - [Pipeline](./backend/executor/01_pipeline.md)
@@ -42,10 +44,11 @@
 - [access](./backend/access/access.md)
   - [heap](./backend/access/heap/heap.md)
     - [README.HOT](./backend/access/heap/00_README.HOT.md)
-    - [HOT](./backend/access/heap/02_hot.md)
+    - [Page Prune](./backend/access/heap/01_prune.md)
+    - [Visibility Map](./backend/access/heap/02_vm.md)
+    - [HOT](./backend/access/heap/03_hot.md)
     - [Tuple Lock](./backend/access/heap/00_README.tuplock.md)
-    - [Visibility Map](./backend/access/heap/01_vm.md)
-    - [Lazy VACUUM](./backend/access/heap/03_vacuumlazy.md)
+    - [Lazy VACUUM](./backend/access/heap/04_vacuumlazy.md)
   - [nbtree](./backend/access/nbtree/nbtree.md)
     - [README](./backend/access/nbtree/00_readme.md)
     - [Plan](./backend/access/nbtree/01_plan.md)

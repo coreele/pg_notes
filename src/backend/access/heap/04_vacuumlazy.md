@@ -10,7 +10,7 @@
 
 **Lazy vacuum**：在 `ShareUpdateExclusiveLock` 下按页清理堆与索引，不重写整表、不更换 `relfilenode`。普通 `VACUUM` 与 autovacuum worker 均走此路径。
 
-源码：`commands/vacuum.c` → `heap_vacuum_rel`（`vacuumlazy.c`）。对照：[HOT](./02_hot.md) prune、[VM](./01_vm.md)、[FSM](../../storage/freespace/01_fsm.md)。
+源码：`commands/vacuum.c` → `heap_vacuum_rel`（`vacuumlazy.c`）。对照：[Page Prune](./01_prune.md)、[HOT](./03_hot.md)、[VM](./02_vm.md)、[FSM](../../storage/freespace/01_fsm.md)。
 
 | 路径 | 锁 | 作用 | 文件 |
 | --- | --- | --- | --- |
@@ -130,7 +130,7 @@ ExecVacuum
 1. 获取 cleanup lock（与普通读 pin 互斥；失败则等待或稍后重试）。
 2. `heap_page_prune`：回收 HOT 死版本；将仍被索引引用的死元组标为 `LP_DEAD`（槽保留，`lp_off` 无意义）。
 3. 将本页全部 `LP_DEAD` 的 `(blk, offset)` 记入死 TID 集合。
-4. 若页内已无 dead 且对所有快照可见 → 置 `PD_ALL_VISIBLE` 并 `visibilitymap_set`（WAL：`log_heap_visible`）。见 [VM](./01_vm.md)。
+4. 若页内已无 dead 且对所有快照可见 → 置 `PD_ALL_VISIBLE` 并 `visibilitymap_set`（WAL：`log_heap_visible`）。见 [VM](./02_vm.md)。
 5. `RecordPageWithFreeSpace` 更新 [FSM](../../storage/freespace/01_fsm.md)。
 
 第一遍不得将 `LP_DEAD` 改为 `LP_UNUSED`。
@@ -251,6 +251,6 @@ HOT：仅修改 `b`，`VACUUM` 后 lp 1 为 `LP_REDIRECT`，主键仍指向 `(0,
 
 ---
 
-**相关笔记**: [Heap AM](./heap.md) · [HOT](./02_hot.md) · [VM](./01_vm.md) · [FSM](../../storage/freespace/01_fsm.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [Lock Overview](../../storage/lmgr/01_overview.md) · [trace: delete](../../../traces/02_delete.md) · [trace: update](../../../traces/03_update.md)
+**相关笔记**: [Heap AM](./heap.md) · [Page Prune](./01_prune.md) · [HOT](./03_hot.md) · [VM](./02_vm.md) · [FSM](../../storage/freespace/01_fsm.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [Lock Overview](../../storage/lmgr/01_overview.md) · [trace: delete](../../../traces/02_delete.md) · [trace: update](../../../traces/03_update.md)
 
 **最后更新**: 2026-08-18 | **适用版本**: PostgreSQL 15.x / 16.x / devel

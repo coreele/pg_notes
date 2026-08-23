@@ -1,6 +1,6 @@
 # update
 
-观测 UPDATE 的 MVCC 新版本、HOT vs cold、hint bit，以及 VACUUM prune 后的 `LP_REDIRECT`。机制见 [Why & How: HOT](../backend/access/heap/02_hot.md)；锁顺序见 [Lock in update](../backend/storage/lmgr/02_update.md)。
+观测 UPDATE 的 MVCC 新版本、HOT vs cold、hint bit，以及 VACUUM prune 后的 `LP_REDIRECT`。机制见 [Why & How: HOT](../backend/access/heap/03_hot.md)；锁顺序见 [Lock in update](../backend/storage/lmgr/02_update.md)。
 
 - 调试：`pageinspect` 的 `heap_page_items` / `bt_page_items`
 - 表上 `autovacuum_enabled = off`，否则 prune / VACUUM 会抢在观察之前发生
@@ -8,11 +8,11 @@
 
 `t_infomask2` 低 11 bit = `natts`（本例 2）。HOT 标志叠在上面：
 
-| `t_infomask2` | 含义                                      |
-| ------------- | ----------------------------------------- |
-| 2             | 仅 `natts`                                |
-| 16386         | `HEAP_HOT_UPDATED (0x4000)` + 2           |
-| 32770         | `HEAP_ONLY_TUPLE (0x8000)` + 2            |
+| `t_infomask2` | 含义                            |
+| ------------- | ------------------------------- |
+| 2             | 仅 `natts`                      |
+| 16386         | `HEAP_HOT_UPDATED (0x4000)` + 2 |
+| 32770         | `HEAP_ONLY_TUPLE (0x8000)` + 2  |
 
 `t_infomask`：`HEAP_XMIN_COMMITTED=256`，`HEAP_XMAX_COMMITTED=1024`，`HEAP_XMAX_INVALID=2048`，`HEAP_UPDATED=8192`（新版本）。`lp_flags`：1=`LP_NORMAL`，2=`LP_REDIRECT`，3=`LP_DEAD`，0=`LP_UNUSED`。
 
@@ -144,4 +144,4 @@ UPDATE 与 DELETE 一样先给旧版本写 `t_xmax`；差别是再插入新版�
 
 ---
 
-**相关笔记**: [HOT](../backend/access/heap/02_hot.md) · [Heap AM](../backend/access/heap/heap.md) · [VM](../backend/access/heap/01_vm.md) · [delete](./02_delete.md) · [pageinspect](../tools/01_pageinspect.md)
+**相关笔记**: [HOT](../backend/access/heap/03_hot.md) · [Heap AM](../backend/access/heap/heap.md) · [VM](../backend/access/heap/02_vm.md) · [delete](./02_delete.md) · [pageinspect](../tools/01_pageinspect.md)

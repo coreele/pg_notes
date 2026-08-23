@@ -1,111 +1,105 @@
-# Why & How: Free Space Map (FSM)
+# FSM Category
 
-## 1. 定义
+1. **Relation Fork机制**：main、fsm、vm三个fork；`_fsm`文件物理布局，FSM文件延迟创建（第一次vacuum / 第一次查找空闲页才生成），不是建表就生成。
 
-**Free Space Map（FSM）**：关系的独立 fork（`<relfilenode>_fsm`，`FSM_FORKNUM`），按 **堆/索引页** 记录「大约还有多少空闲空间」，供插入与扩展决策快速查询。
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_freespacemap;
+CREATE EXTENSION IF NOT EXISTS pageinspect;
 
-- 每数据页对应 **1 个 category 字节**：空闲量 ≈ `cat * (BLCKSZ/256)`（向下取整）；假定空闲 < `BLCKSZ`，故 cat ∈ 0…255。
-- 不存精确字节数，以便 map 小、可树形搜索。
-- Heap 与多数索引（hash 除外）有 FSM。
+DROP TABLE IF EXISTS fsm_demo;
+-- fillfactor=100，不预留update空间；关闭自动vacuum
+CREATE TABLE fsm_demo (
+    id int PRIMARY KEY,
+    payload text
+) WITH (fillfactor = 100, autovacuum_enabled = off);
 
-源码：`src/backend/storage/freespace/`（`freespace.c`、`fsmpage.c`、[README](./00_readme.md)）。
+-- 1.建表完毕，FSM fork尚未创建 fsm_bytes = 0
+SELECT
+    pg_relation_size('fsm_demo','main') AS main_bytes,
+    pg_relation_size('fsm_demo','fsm')  AS fsm_bytes;
 
----
+-- 插入500行，每条payload=140字节，控制恰好占满 10 个heap page
+INSERT INTO fsm_demo
+SELECT g, repeat('x',120) FROM generate_series(1, 500) g;
 
-## 2. 为何需要
+-- 查看heap总块数：预期 ~10
+SELECT pg_relation_size('fsm_demo','main') / 8192 AS heap_total_blocks;
 
-`heap_insert` → `RelationGetBufferForTuple` 需要一块能容纳新 tuple（含对齐/填充）的页。
+-- 2.INSERT触发第一次GetPageWithFreeSpace，FSM fork被创建
+SELECT pg_relation_size('fsm_demo','fsm') / 8192 AS fsm_total_blocks;
 
-若无 FSM，只能从 block 0 起试探或扫表，随 `nblocks` 恶化。FSM 把「是否存在 ≥ X 空闲」变成对 FSM 树的下降搜索；整棵子树不够时，根节点一次即可否定。返回 `InvalidBlockNumber` 时由调用方 **extend** 关系。
+-- FSM对外API：FSM预估空闲字节
+SELECT blkno, avail AS fsm_est_free_bytes, avail/32 AS fsm_cat
+FROM pg_freespace('fsm_demo')
+ORDER BY blkno;
 
-信息是**近似且可能过期**的：并发插入、粒度舍入、未及时 `RecordPageWithFreeSpace` 都会让「FSM 说够、页上不够」出现；API 契约要求调用方能处理该情况。
+-- 3.对比：FSM预估空闲 VS heap page真实空闲（前12个heap块）
+SELECT
+    f.blkno,
+    f.avail AS fsm_est_free_bytes,
+    f.avail / 32 AS fsm_cat,
+    (ph.upper - ph.lower)::int AS heap_real_free_bytes -- PageGetExactFreeSpace
+FROM pg_freespace('fsm_demo') f
+JOIN LATERAL page_header(get_raw_page('fsm_demo', f.blkno::int)) ph ON true
+WHERE f.blkno < 12
+ORDER BY f.blkno;
 
----
+-- 4.查看FSM fork页内容
+-- fsm blk0 = FSM树根页（内部节点全部255）
+SELECT fsm_page_contents(get_raw_page('fsm_demo', 'fsm', 2));
 
+-- 5.delete制造页内空洞：删除后面3页的数据，heap产生空闲，但FSM不变
+DELETE FROM fsm_demo WHERE id < 350;
 
+-- delete之后，FSM缓存仍然是旧值
+SELECT max(avail) AS max_fsm_bytes_before_vacuum
+FROM pg_freespace('fsm_demo');
 
-## 3. 页内结构：byte 数组上的 max 树
+-- 看heap真实空闲：后面几个块 heap_real_free_bytes 已经变大
+SELECT
+    f.blkno,
+    f.avail AS fsm_est_free_bytes,
+    (ph.upper - ph.lower)::int AS heap_real_free_bytes
+FROM pg_freespace('fsm_demo') f
+JOIN LATERAL page_header(get_raw_page('fsm_demo', f.blkno::int)) ph ON true
+WHERE f.blkno <12
+ORDER BY f.blkno;
 
-每个 FSM 页把一棵二叉树摊在数组里：叶子存「某一堆页（或下一层 FSM 页）的空闲类别」；非叶 = 两子的 **max**。
+-- 执行vacuum：扫描heap pages，批量刷新FSM树
+VACUUM fsm_demo;
 
-```text
-        4
-     4     2
-   3  4  0  2     <- 叶：对应数据页（或下层 FSM）
+SELECT max(avail) AS max_fsm_bytes_after_vacuum
+FROM pg_freespace('fsm_demo');
+
+-- vacuum后叶子FSM页，128被替换为真实category
+\x on
+SELECT fsm_page_contents(get_raw_page('fsm_demo', 'fsm', 1));
+\x off
+
+-- 6.测试 RecordAndGetPageWithFreeSpace 就地修正FSM（不跑vacuum也可以修正单个slot）
+-- 先删除再回滚，把FSM恢复到旧状态
+BEGIN;
+DELETE FROM fsm_demo WHERE id > 450;
+ROLLBACK;
+
+-- 现在FSM里blk0还是旧hint，heap blk0有少量空闲
+-- 尝试插入，PG选中blk0，发现真实空间不足，就地修正FSM
+INSERT INTO fsm_demo(id,payload) VALUES(9999, repeat('x',100));
+
+-- blk0被修正，其余块依旧保留旧FSM值
+SELECT blkno, avail AS fsm_est_free_bytes, avail/32 AS fsm_cat
+FROM pg_freespace('fsm_demo')
+WHERE blkno IN (0,1,2,3,4)
+ORDER BY blkno;
+
 ```
 
-因页头占用，叶层不是完美 2 的幂：右侧缺若干叶，上层仍保持完全。对外用「slot」抽象，由 `fsm_search_avail` / `fsm_set_avail` 隐藏数组下标细节。
-
-**搜索**（要 cat ≥ X）：从根往下，选「子 ≥ X」的分支；两子都可则按策略选一（可偏向某页邻近，或打散负载）。`fp_next_slot` 等状态用于轮转起点，减少总挤同一叶。
-
-**更新**：写叶 → 沿父 **bubble up** 重算 max，直到根或父值不变。
-
-性质：根 < X ⇒ 本 FSM 页覆盖范围内不存在足够空闲。
-
----
-
-
-
-## 4. 跨页：FSM 页树
-
-数据页很多时，底层 FSM 页的根再作为上层 FSM 页的叶子，形成多层。`freespace.c` 负责地址换算与层间遍历；单页内算法在 `fsmpage.c`。
-
-物理上 FSM fork 随关系增长扩展；与 main fork 的 block 编号通过固定扇出关系映射（见 README「Higher-level structure」）。
-
----
-
-
-
-## 5. 对外 API 与插入路径
-
-
-| 函数                                                  | 作用                                                                                  |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `GetPageWithFreeSpace(rel, spaceNeeded)`            | `fsm_space_needed_to_cat` 后 `fsm_search`；命中返回 `BlockNumber`，否则 `InvalidBlockNumber` |
-| `RecordPageWithFreeSpace(rel, heapBlk, spaceAvail)` | 把该堆页的实测/估计空闲写回 FSM                                                                  |
-| `RecordAndGetPageWithFreeSpace(...)`                | 先更新「刚失败的那页」空闲，再搜下一候选（插入重试）                                                          |
-| `FreeSpaceMapVacuum` 等                              | VACUUM 后批量校正 FSM（与清理路径配合）                                                           |
-
-
-典型插入：
-
-```text
-RelationGetBufferForTuple
-  -> GetPageWithFreeSpace(spaceNeeded)
-       命中 -> 锁页、复核空闲
-            不够 -> RecordAndGetPageWithFreeSpace / 再试
-       未命中 -> RelationAddBlocks 扩展 main fork，初始化新页
-  -> 放入 tuple 后视情况 RecordPageWithFreeSpace
-```
-
-VACUUM / page prune 回收空间后应更新 FSM，否则空闲「看不见」，表会不必要地膨胀。
-
-观测：contrib `pg_freespacemap`。
-
----
-
-
-
-## 6. 源码入口
-
-- 设计说明：`src/backend/storage/freespace/README`
-- 关系级搜索/记录：`freespace.c`
-- 页内树：`fsmpage.c`
-- 插入选页：`access/heap/hio.c` — `RelationGetBufferForTuple`
-- Fork 常量：`FSM_FORKNUM`（`relfilenode.h` / smgr）
-
----
-
-
-
-## 7. 小结
-
-1. FSM = 每数据页一字节空闲类别 + 页内/跨页 **max 树**，加速「找够大的页」。
-2. 粒度与并发使结果不可盲信；选页后必须在堆页上复核。
-3. 扩展与 VACUUM 都要维护 FSM，否则插入只见「假满」。
-
----
-
-**相关笔记**: [FSM README](./00_readme.md) · [Visibility Map](../../access/heap/01_vm.md) · [Heap AM](../../access/heap/heap.md) · [Page Layout](../page/01_page_layout.md) · [insert](../../../traces/01_insert.md)
-
-**最后更新**: 2026-08-03 | **适用版本**: PostgreSQL 15.x / 16.x / devel
+2. **FSM Category档位机制**
+   - `FSM_CATEGORIES=256`，1字节记录一个heap page空闲档位；`FSM_CAT_STEP = BLCKSZ / 256`（8K页下=32字节）。
+   - 三个转换函数：
+     - `fsm_space_avail_to_cat()`：真实空闲字节 → category档位
+     - `fsm_space_needed_to_cat()`：需要多少字节 → 最小需要的category
+     - `fsm_space_cat_to_avail()`：category → 对应最小空闲字节数
+   - ⚠️关键点：FSM只存区间，**不存精确值**；255代表≥`MaxFSMRequestSize`。
+3. FSM地址模型：`FSMAddress{level, logpageno}`，逻辑层号+逻辑页号，完成heap blockno ↔ FSM(level,slot)双向映射。
+4. 工具扩展`contrib/pg_freespacemap`，`pg_freespace()`，用于调试观察FSM内容，实操验证理解。
