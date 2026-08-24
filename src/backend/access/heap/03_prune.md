@@ -4,7 +4,7 @@
 
 **Page prune**：在**单个 heap 页内部**回收已死元组、缩短 HOT 链、整理碎片。**不跨页，不碰索引**。
 
-与 lazy `VACUUM` 共用 `heap_page_prune()`，但 opportunistic 路径条件更严、不做索引清理。对照：[HOT](./03_hot.md) · [Lazy VACUUM](./04_vacuumlazy.md) · [README.HOT](./00_README.HOT.md)。
+与 lazy `VACUUM` 共用 `heap_page_prune()`，但 opportunistic 路径条件更严、不做索引清理。对照：[HOT](./02_hot.md) · [Lazy VACUUM](./04_vacuumlazy.md) · [README.HOT](./00_README.HOT.md)。
 
 源码：`src/backend/access/heap/pruneheap.c`。
 
@@ -14,7 +14,7 @@
 | **VACUUM prune** | `heap_page_prune()`         | 已持 cleanup lock                       | 每页必做；用 `OldestXmin`   |
 | **WAL replay**   | `heap_page_prune_execute()` | redo 路径                               | 应用 `XLOG_HEAP2_PRUNE` |
 
-开销阶梯：page prune ≪ `ANALYZE` ≪ lazy `VACUUM` ≪ `VACUUM FULL`。
+开销阶梯：page prune ≪ lazy `VACUUM` ≪ `VACUUM FULL`。
 
 ---
 
@@ -196,10 +196,29 @@ DELETE from test_prune where id = 3;
 VACUUM test_prune;   -- 每页直接 heap_page_prune，不依赖 PageIsFull
 ```
 
+### 9.3 Call Stack
+
+```c
+ExecVacuum | vacuum
+    vacuum_rel | table_relation_vacuum
+        heap_vacuum_rel | lazy_scan_heap | lazy_scan_prune
+            heap_page_prune /* Prune and repair fragmentation in the specified page. */
+	            heap_prune_chain /* Process this item or chain of items */
+	            heap_page_prune_execute /* Perform the actual page changes needed by heap_page_prune */
+		            ItemIdSetRedirect /* Update all redirected line pointers */
+		            ItemIdSetDead /* Update all now-dead line pointers */
+		            ItemIdSetUnused /* Update all now-unused line pointers */
+		            PageRepairFragmentation
+			            compactify_tuples
+	            PageClearFull
+	            XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_PRUNE);
+            
+```
+
 ---
 
 ## 10. 相关笔记
 
-[HOT](./03_hot.md) · [Lazy VACUUM](./04_vacuumlazy.md) · [VM](./02_vm.md) · [heap.md](./heap.md) · [Page Layout](../../storage/page/01_page_layout.md) · [trace: update](../../../traces/03_update.md)
+[HOT](./02_hot.md) · [Lazy VACUUM](./04_vacuumlazy.md) · [VM](./01_vm.md) · [heap.md](./heap.md) · [Page Layout](../../storage/page/01_page_layout.md) · [trace: update](../../../traces/03_update.md)
 
 **最后更新**: 2026-08-23 | **适用版本**: PostgreSQL 16.x（对照 `REL_16_11` 源码）

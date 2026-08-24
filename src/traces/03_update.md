@@ -1,6 +1,6 @@
 # update
 
-观测 UPDATE 的 MVCC 新版本、HOT vs cold、hint bit，以及 VACUUM prune 后的 `LP_REDIRECT`。机制见 [Why & How: HOT](../backend/access/heap/03_hot.md)；锁顺序见 [Lock in update](../backend/storage/lmgr/02_update.md)。
+观测 UPDATE 的 MVCC 新版本、HOT vs cold、hint bit，以及 VACUUM prune 后的 `LP_REDIRECT`。机制见 [Why & How: HOT](../backend/access/heap/02_hot.md)；锁顺序见 [Lock in update](../backend/storage/lmgr/02_update.md)。
 
 - 调试：`pageinspect` 的 `heap_page_items` / `bt_page_items`
 - 表上 `autovacuum_enabled = off`，否则 prune / VACUUM 会抢在观察之前发生
@@ -144,4 +144,4 @@ UPDATE 与 DELETE 一样先给旧版本写 `t_xmax`；差别是再插入新版�
 
 ---
 
-**相关笔记**: [HOT](../backend/access/heap/03_hot.md) · [Heap AM](../backend/access/heap/heap.md) · [VM](../backend/access/heap/02_vm.md) · [delete](./02_delete.md) · [pageinspect](../tools/01_pageinspect.md)
+**相关笔记**: [HOT](../backend/access/heap/02_hot.md) · [Page Prune](../backend/access/heap/03_prune.md) · [Heap AM](../backend/access/heap/heap.md) · [VM](../backend/access/heap/01_vm.md) · [delete](./02_delete.md) · [pageinspect](../tools/01_pageinspect.md)

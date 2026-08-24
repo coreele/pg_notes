@@ -10,14 +10,14 @@
 
 **Lazy vacuum**：在 `ShareUpdateExclusiveLock` 下按页清理堆与索引，不重写整表、不更换 `relfilenode`。普通 `VACUUM` 与 autovacuum worker 均走此路径。
 
-源码：`commands/vacuum.c` → `heap_vacuum_rel`（`vacuumlazy.c`）。对照：[Page Prune](./01_prune.md)、[HOT](./03_hot.md)、[VM](./02_vm.md)、[FSM](../../storage/freespace/01_fsm.md)。
+源码：`commands/vacuum.c` → `heap_vacuum_rel`（`vacuumlazy.c`）。对照：[Page Prune](./03_prune.md)、[HOT](./02_hot.md)、[VM](./01_vm.md)、[FSM](../../storage/freespace/01_fsm.md)。
 
-| 路径 | 锁 | 作用 | 文件 |
-| --- | --- | --- | --- |
-| prune | page cleanup lock | 仅当前页；可回收 HOT 死版本；带索引项的死 lp 标 `LP_DEAD` | `pruneheap.c` |
-| lazy `VACUUM` | `ShareUpdateExclusiveLock` | prune + 清理索引 + `LP_DEAD`→`LP_UNUSED` + 置 VM / 记 FSM；仅表尾连续空页可截断 | `vacuumlazy.c` |
-| `VACUUM FULL` | `AccessExclusiveLock` | 按堆扫描顺序 `rewriteheap`，新 `relfilenode`，重建索引 | `cluster.c` / `rewriteheap.c` |
-| `CLUSTER tb` | `AccessExclusiveLock` | 按索引顺序 `rewriteheap`，新 `relfilenode`，重建索引 | `cluster.c` / `rewriteheap.c` |
+| 路径          | 锁                         | 作用                                                                            | 文件                          |
+| ------------- | -------------------------- | ------------------------------------------------------------------------------- | ----------------------------- |
+| prune         | page cleanup lock          | 仅当前页；可回收 HOT 死版本；带索引项的死 lp 标 `LP_DEAD`                       | `pruneheap.c`                 |
+| lazy `VACUUM` | `ShareUpdateExclusiveLock` | prune + 清理索引 + `LP_DEAD`→`LP_UNUSED` + 置 VM / 记 FSM；仅表尾连续空页可截断 | `vacuumlazy.c`                |
+| `VACUUM FULL` | `AccessExclusiveLock`      | 按堆扫描顺序 `rewriteheap`，新 `relfilenode`，重建索引                          | `cluster.c` / `rewriteheap.c` |
+| `CLUSTER tb`  | `AccessExclusiveLock`      | 按索引顺序 `rewriteheap`，新 `relfilenode`，重建索引                            | `cluster.c` / `rewriteheap.c` |
 
 PG 9.0 起 `VACUUM FULL` 不再在原文件内搬元组，而是调用 `cluster_rel()`，与 `CLUSTER` 共用 `rewriteheap`：将仍需保留的元组写入新堆文件、重建全部索引、切换 `relfilenode` 后删除旧文件。二者都能消除中部空洞并缩小关系文件。
 
@@ -47,8 +47,8 @@ LP 的四种状态
 #define LP_DEAD			3		/* dead, may or may not have storage */
 ```
 
-普通 / cold 旧版本:    UNUSED → NORMAL [→ DEAD] → UNUSED
-HOT 根（对外 TID）:    UNUSED → NORMAL → REDIRECT [→ DEAD] → UNUSED
+普通 / cold 旧版本: UNUSED → NORMAL [→ DEAD] → UNUSED
+HOT 根（对外 TID）: UNUSED → NORMAL → REDIRECT [→ DEAD] → UNUSED
 HOT 中间（HEAP_ONLY）: UNUSED → NORMAL → UNUSED
 
 VACUUM 合法顺序：
@@ -130,7 +130,7 @@ ExecVacuum
 1. 获取 cleanup lock（与普通读 pin 互斥；失败则等待或稍后重试）。
 2. `heap_page_prune`：回收 HOT 死版本；将仍被索引引用的死元组标为 `LP_DEAD`（槽保留，`lp_off` 无意义）。
 3. 将本页全部 `LP_DEAD` 的 `(blk, offset)` 记入死 TID 集合。
-4. 若页内已无 dead 且对所有快照可见 → 置 `PD_ALL_VISIBLE` 并 `visibilitymap_set`（WAL：`log_heap_visible`）。见 [VM](./02_vm.md)。
+4. 若页内已无 dead 且对所有快照可见 → 置 `PD_ALL_VISIBLE` 并 `visibilitymap_set`（WAL：`log_heap_visible`）。见 [VM](./01_vm.md)。
 5. `RecordPageWithFreeSpace` 更新 [FSM](../../storage/freespace/01_fsm.md)。
 
 第一遍不得将 `LP_DEAD` 改为 `LP_UNUSED`。
@@ -155,8 +155,6 @@ cold update 见 [update trace](../../../traces/03_update.md)：索引中 `(0,1)`
 
 ---
 
-
-
 ```
 DELETE / cold UPDATE, committed, not yet vacuumed
   Index --> lp[1] LP_NORMAL     /* old; xmax committed */
@@ -178,11 +176,11 @@ HOT UPDATE after vacuum
 
 ## 6. 锁、并发与代价
 
-| 对象 | 锁 | 作用 |
-| --- | --- | --- |
-| 表 | `ShareUpdateExclusiveLock` | 排斥第二个 VACUUM / 部分 DDL；允许 DML |
-| 堆页 | cleanup lock | prune、修改 lp、置 `PD_ALL_VISIBLE` 时独占该页 |
-| 索引页 | 各 AM 的 vacuum 锁 | 删除死索引项 |
+| 对象   | 锁                         | 作用                                           |
+| ------ | -------------------------- | ---------------------------------------------- |
+| 表     | `ShareUpdateExclusiveLock` | 排斥第二个 VACUUM / 部分 DDL；允许 DML         |
+| 堆页   | cleanup lock               | prune、修改 lp、置 `PD_ALL_VISIBLE` 时独占该页 |
+| 索引页 | 各 AM 的 vacuum 锁         | 删除死索引项                                   |
 
 DML 与 vacuum 并发时，本轮只回收扫描时已满足条件的死元组；此后产生的死元组留待下一轮。置 VM 须持有堆页锁并复核，避免刚标记 all-visible 即被 INSERT 修改。
 
@@ -251,6 +249,6 @@ HOT：仅修改 `b`，`VACUUM` 后 lp 1 为 `LP_REDIRECT`，主键仍指向 `(0,
 
 ---
 
-**相关笔记**: [Heap AM](./heap.md) · [Page Prune](./01_prune.md) · [HOT](./03_hot.md) · [VM](./02_vm.md) · [FSM](../../storage/freespace/01_fsm.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [Lock Overview](../../storage/lmgr/01_overview.md) · [trace: delete](../../../traces/02_delete.md) · [trace: update](../../../traces/03_update.md)
+**相关笔记**: [Heap AM](./heap.md) · [Page Prune](./03_prune.md) · [HOT](./02_hot.md) · [VM](./01_vm.md) · [FSM](../../storage/freespace/01_fsm.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [Lock Overview](../../storage/lmgr/01_overview.md) · [trace: delete](../../../traces/02_delete.md) · [trace: update](../../../traces/03_update.md)
 
 **最后更新**: 2026-08-18 | **适用版本**: PostgreSQL 15.x / 16.x / devel

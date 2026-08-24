@@ -13,7 +13,7 @@
 
 `t_infomask` 上的 `HEAP_UPDATED`（`0x2000`）表示「这是 UPDATE 产生的新版本」，HOT / cold 都有。
 
-源码：`heapam.c`（`heap_update`）、`pruneheap.c`、`htup_details.h`。上游说明：[README.HOT](./00_README.HOT.md)。
+源码：`heapam.c`（`heap_update`）、`htup_details.h`。页内缩短链、回收死版本见 [Page Prune](./03_prune.md)。上游说明：[README.HOT](./00_README.HOT.md)。
 
 ---
 
@@ -45,6 +45,8 @@ HOT 把「索引列没变」收成**单页**约束：整条链共享一个索引
 
 ## 4. 链与 prune
 
+HOT 决定**索引只钉 root**；prune 负责把链缩短、把死 root 变成 `LP_REDIRECT`。后者的触发、hint、与 VACUUM 分工见 [Page Prune](./03_prune.md)。
+
 ```text
 Index -> lp[1]
          [v1 HOT_UPDATED] --t_ctid--> [v2 HEAP_ONLY]
@@ -57,8 +59,6 @@ Index -> lp[1] LP_REDIRECT --> lp[2]
 索引始终指向 **root**（lp 1）。HOT 新版本没有自己的索引项：Index Scan 先落到 root，再沿 `t_ctid` 找到活元组；Seq Scan 扫每个 lp，不用跟链。
 
 v1 对所有快照都不可见后，prune 收回它的元组体，但 root 这个槽还在——改成 `LP_REDIRECT`（`lp_off` = 活元组的 OffsetNumber）。索引仍是 `(0,1)`。这就是 [update trace](../../../traces/03_update.md) 里 `VACUUM` 之后的页。
-
-页很空时 `SELECT` 往往只打 hint、不 prune（`heap_page_prune_opt` 的空闲门槛，见 §5）。`VACUUM` 会 prune，但 prune 本身不是 `VACUUM`：只处理**当前这一页**，不扫索引、不更新 VM。
 
 ---
 
@@ -83,22 +83,9 @@ ExecModifyTable | ExecUpdate
   [not HOT] ExecInsertIndexTuples
 ```
 
-**Prune：**
+HOT 时打标志、写 `pd_prune_xid`（`PageSetPrunable`），给后续页内回收留 hint；非 HOT 才插索引。
 
-```text
-heap_page_prune_opt          /* 访页；空闲门槛见下 */
-  heap_page_prune
-vacuumlazy -> heap_page_prune /* 无空闲门槛，扫到就 prune */
-```
-
-`heap_page_prune_opt` 要**同时**满足才真调 `heap_page_prune`。拿不到 cleanup lock 就放弃，不阻塞查询。
-
-1. 页头 `pd_prune_xid` 有效 —— UPDATE/DELETE 时 `PageSetPrunable` 写入。
-2. 该 xid 已可回收 —— 对当前所有快照都不可见。
-3. 页看起来挤 —— `PD_PAGE_FULL`（上次 UPDATE 塞不下）**或** 空闲 < `max(fillfactor 预留, BLCKSZ/10)`。默认 fillfactor=100 时约 10% 页（8k ≈ 800 字节）。
-4. `ConditionalLockBufferForCleanup` 立刻拿到。
-
-所以 [update trace](../../../traces/03_update.md) 里一行占一页、空闲远大于 10% 时，`SELECT` 只打 hint、不 prune；要看 redirect 得 `VACUUM`。
+**Prune：** `heap_page_prune_opt` / `heap_page_prune` 如何缩短这条链、何时真正动手，见 [Page Prune](./03_prune.md)。
 
 ---
 
@@ -106,7 +93,7 @@ vacuumlazy -> heap_page_prune /* 无空闲门槛，扫到就 prune */
 
 - 设计：`src/backend/access/heap/README.HOT`
 - 判定与打标：`heap_update`（`heapam.c`）
-- 剪枝：`pruneheap.c`（`heap_page_prune_opt`、`heap_page_prune`）
+- 剪枝：[Page Prune](./03_prune.md)（`pruneheap.c`）
 - 标志：`HEAP_HOT_UPDATED` / `HEAP_ONLY_TUPLE`（`htup_details.h`，`infomask2`）
 - 索引插入：`ExecInsertIndexTuples`（非 HOT）
 - WAL：`log_heap_update`（HOT 与 cold 不同 flags）
@@ -116,11 +103,11 @@ vacuumlazy -> heap_page_prune /* 无空闲门槛，扫到就 prune */
 ## 7. 小结
 
 1. HOT = 同页 + 索引列 bitwise 不变 → 不插索引；旧版 `HOT_UPDATED`，新版 `HEAP_ONLY`。
-2. 索引始终指向 root；prune 把死 root 变成 `LP_REDIRECT`，从而能收回元组体且索引仍有效。
+2. 索引始终指向 root；prune 把死 root 变成 `LP_REDIRECT`，从而能收回元组体且索引仍有效（细节见 [Page Prune](./03_prune.md)）。
 3. 没空间或改了索引列 → cold update，必须新索引项；VACUUM 才能回收带索引的死 lp。
 
 ---
 
-**相关笔记**: [Heap AM](./heap.md) · [README.HOT](./00_README.HOT.md) · [Page Prune](./01_prune.md) · [VM](./02_vm.md) · [Lazy VACUUM](./04_vacuumlazy.md) · [Page Layout](../../storage/page/01_page_layout.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [trace: update](../../../traces/03_update.md)
+**相关笔记**: [Heap AM](./heap.md) · [README.HOT](./00_README.HOT.md) · [Page Prune](./03_prune.md) · [VM](./01_vm.md) · [Lazy VACUUM](./04_vacuumlazy.md) · [Page Layout](../../storage/page/01_page_layout.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [trace: update](../../../traces/03_update.md)
 
-**最后更新**: 2026-08-17 | **适用版本**: PostgreSQL 15.x / 16.x / devel
+**最后更新**: 2026-08-24 | **适用版本**: PostgreSQL 15.x / 16.x / devel
