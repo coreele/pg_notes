@@ -8,11 +8,11 @@
 
 源码：`src/backend/access/heap/pruneheap.c`。
 
-| 路径             | 入口                        | 锁                                       | 特点                      |
-| ---------------- | --------------------------- | ---------------------------------------- | ------------------------- |
-| **按需 prune**   | `heap_page_prune_opt()`     | 非阻塞 `ConditionalLockBufferForCleanup` | 读路径触发；页快满才做    |
-| **VACUUM prune** | `heap_page_prune()`         | 已持 cleanup lock                        | 每页必做；用 `OldestXmin` |
-| **WAL replay**   | `heap_page_prune_execute()` | redo 路径                                | 应用 `XLOG_HEAP2_PRUNE`   |
+| 路径               | 入口                          | 锁                                     | 特点                    |
+| ---------------- | --------------------------- | ------------------------------------- | --------------------- |
+| **按需 prune**     | `heap_page_prune_opt()`     | 非阻塞 `ConditionalLockBufferForCleanup` | 读路径触发；页快满才做           |
+| **VACUUM prune** | `heap_page_prune()`         | 已持 cleanup lock                       | 每页必做；用 `OldestXmin`   |
+| **WAL replay**   | `heap_page_prune_execute()` | redo 路径                               | 应用 `XLOG_HEAP2_PRUNE` |
 
 开销阶梯：page prune ≪ `ANALYZE` ≪ lazy `VACUUM` ≪ `VACUUM FULL`。
 
@@ -159,6 +159,8 @@ VACUUM 扫描
 ### 9.1 扫描驱动（页快满 + dead tuple 已可移除）
 
 ```sql
+DROP TABLE IF EXISTS test_prune;
+
 CREATE TABLE test_prune (id int PRIMARY KEY, val text)
   WITH (autovacuum_enabled = off, fillfactor = 100);
 
@@ -179,6 +181,18 @@ SELECT count(*) FROM test_prune;
 ### 9.2 VACUUM 驱动
 
 ```sql
+DROP TABLE IF EXISTS test_prune;
+
+CREATE TABLE test_prune (id int PRIMARY KEY, val int)
+WITH (autovacuum_enabled = off, fillfactor = 100);
+
+INSERT INTO test_prune values (1, 1), (2, 2), (3, 3);
+
+-- HOT 更新，产生 dead heap-only tuple（不增索引项）
+UPDATE test_prune SET val = val * 10 WHERE id = 2;
+
+DELETE from test_prune where id = 3;
+
 VACUUM test_prune;   -- 每页直接 heap_page_prune，不依赖 PageIsFull
 ```
 

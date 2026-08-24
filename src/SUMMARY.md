@@ -21,6 +21,7 @@
 - [Update](./traces/03_update.md)
 - [Crash Recovery](./traces/04_crash_recovery.md)
 - [VM](./traces/05_vm.md)
+- [Prune](./traces/06_prune.md)
 
 ---
 
