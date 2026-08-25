@@ -14,7 +14,7 @@
 | **VACUUM prune** | `heap_page_prune()`         | 已持 cleanup lock                       | 每页必做；用 `OldestXmin`   |
 | **WAL replay**   | `heap_page_prune_execute()` | redo 路径                               | 应用 `XLOG_HEAP2_PRUNE` |
 
-开销阶梯：page prune ≪ lazy `VACUUM` ≪ `VACUUM FULL`。
+开销阶梯：page prune ≪ lazy `VACUUM` ≪ `VACUUM FULL` ≪ CLUSTER。
 
 ---
 
@@ -22,13 +22,9 @@
 
 ### 2.1 按需：`heap_page_prune_opt`
 
-**在读路径**访问某页时调用，**纯 INSERT 不触发**（不读已有页）。
+**在读路径**访问某页时调用。
 
-| 场景                       | 调用位置                         |
-| -------------------------- | -------------------------------- |
-| 顺序扫描（page-at-a-time） | `heapgetpage()` · `heapam.c`     |
-| 索引回表                   | `heapam_handler.c`（切到新页时） |
-| Bitmap Heap Scan           | `heapam_handler.c`               |
+> UPDATE/DELETE 若先靠 Seq/Index/Bitmap **读到**该页，会走同一条 `heap_page_prune_opt`。
 
 Recovery / standby 上直接返回，不主动 prune（主库 WAL 会带 `XLOG_HEAP2_PRUNE`）。
 
@@ -36,7 +32,7 @@ Recovery / standby 上直接返回，不主动 prune（主库 WAL 会带 `XLOG_H
 
 `vacuumlazy.c` 扫描每页时**直接**调用，已持 cleanup lock，用 `vacrel->cutoffs.OldestXmin` 判死，**不依赖**下面的空闲空间启发式。
 
-之后 VACUUM 还会：清索引死项、`LP_DEAD` → `LP_UNUSED`、更新 VM / FSM 等——这些 opportunistic prune **不做**。
+之后 VACUUM 还会：清索引死项、`LP_DEAD` → `LP_UNUSED`、更新 VM / FSM 等，这些 opportunistic prune **不做**。
 
 ---
 
@@ -45,14 +41,14 @@ Recovery / standby 上直接返回，不主动 prune（主库 WAL 会带 `XLOG_H
 `heap_page_prune_opt()` 被调用后，**全部满足**才真正 `heap_page_prune()`：
 
 ```text
-1. 非 RecoveryInProgress()
-2. pd_prune_xid 有效          // 页上可能有可 prune 的 tuple
-3. GlobalVis 可移除 prune_xid // xid 已低于 OldestXmin（或 old_snapshot_threshold）
-4. 页「需要空间」：
+1. !RecoveryInProgress()
+2. pd_prune_xid is valid          // page may have prunable tuples
+3. GlobalVis can remove prune_xid // xid is below OldestXmin (or old_snapshot_threshold)
+4. page needs space:
      PageIsFull(page)
-     OR PageGetHeapFreeSpace(page) < max(fillfactor 目标, BLCKSZ/10)
-5. ConditionalLockBufferForCleanup 成功
-6. 持锁后再次确认条件 4
+     OR PageGetHeapFreeSpace(page) < max(fillfactor target, BLCKSZ/10)
+5. ConditionalLockBufferForCleanup succeeds
+6. re-check condition 4 while holding the lock
 ```
 
 设计意图（README.HOT）：只在页**几乎满**且**可能有 dead/HOT 链**时才修剪；页还空时不做，避免每次读都 prune。
@@ -75,16 +71,6 @@ PageSetPrunable(page, xid);   // heap_update / heap_delete · heapam.c
 - 事务 abort → 后续 prune 是 no-op，hint 会被清掉
 - `pd_prune_xid == InvalidTransactionId` → `heap_page_prune_opt` 立刻返回
 
-### `PD_PAGE_FULL`（`PageIsFull`）
-
-UPDATE **无法在同页**放下新版本（需换页，非 HOT 或 HOT 但空间不够）时：
-
-```c
-PageSetFull(page);   // heap_update · heapam.c
-```
-
-表示「这页可能需要 prune/defrag」。prune 成功后会 `PageClearFull()`。
-
 ---
 
 ## 5. prune 做什么
@@ -100,19 +86,17 @@ PageSetFull(page);   // heap_update · heapam.c
 4. 更新 `pd_prune_xid`、`PageClearFull`
 5. 写 WAL：`XLOG_HEAP2_PRUNE`
 
-按需 prune **不更新 FSM**（注释：空间留给同页后续 UPDATE 复用）。
-
 ---
 
 ## 6. 核心函数
 
-| 函数                        | 作用                                                 |
-| --------------------------- | ---------------------------------------------------- |
+| 函数                          | 作用                                     |
+| --------------------------- | -------------------------------------- |
 | `heap_page_prune_opt()`     | 检查 hint + 视界 + 空闲启发式；非阻塞拿 cleanup lock |
-| `heap_page_prune()`         | 扫描页、规划 HOT 链变更、写 WAL                      |
-| `heap_page_prune_execute()` | 应用 redirect/dead/unused + 碎片整理                 |
-| `heap_prune_chain()`        | 单条 HOT 链的 prune 逻辑                             |
-| `PageRepairFragmentation()` | 紧凑页内空闲区（`bufpage.c`）                        |
+| `heap_page_prune()`         | 扫描页、规划 HOT 链变更、写 WAL                   |
+| `heap_page_prune_execute()` | 应用 redirect/dead/unused + 碎片整理         |
+| `heap_prune_chain()`        | 单条 HOT 链的 prune 逻辑                     |
+| `PageRepairFragmentation()` | 紧凑页内空闲区（`bufpage.c`）                   |
 
 ---
 
@@ -120,7 +104,7 @@ PageSetFull(page);   // heap_update · heapam.c
 
 |           | opportunistic prune                      | lazy VACUUM        |
 | --------- | ---------------------------------------- | ------------------ |
-| 触发      | SELECT / Index Scan / Bitmap Scan        | `VACUUM` 命令      |
+| 触发      | 扫描读页（含 UPDATE/DELETE 定位元组） | `VACUUM` 命令      |
 | 视界      | `GlobalVisTest` / `InvalidTransactionId` | `OldestXmin`       |
 | 空间条件  | 页快满才做                               | 无                 |
 | 索引      | 不碰                                     | 清 dead 索引项     |
@@ -135,21 +119,22 @@ PageSetFull(page);   // heap_update · heapam.c
 ## 8. 流程概览
 
 ```text
-UPDATE / DELETE（旧页）
-  ├─ PageSetPrunable(pd_prune_xid)
-  └─ (同页放不下新版本) PageSetFull
-
-SELECT / Index Scan / Bitmap Scan 读到该页
+定位旧元组（Seq / Index / Bitmap 读页）
   └─ heap_page_prune_opt()
-       ├─ pd_prune_xid 无效 ──────────────→ 返回
-       ├─ xid 还不够旧 ───────────────────→ 返回
-       ├─ 页空间还够（且非 FULL）──────────→ 返回
-       ├─ 拿不到 cleanup lock ────────────→ 返回
-       └─ heap_page_prune() → WAL → defrag
+
+heap_delete（旧页，exclusive lock）
+  └─ PageSetPrunable                // 不 prune、不 SetFull
+
+heap_update（旧页，exclusive lock）
+  ├─ newtupsize > pagefree
+  │    RelationGetBufferForTuple    // 换页；PG 16 此处不 prune 旧页
+  │    PageSetFull(old page)
+  ├─ else 同页放入（HOT 或 cold）
+  └─ PageSetPrunable(old page)      // 总是；本次 xmax 还不能被 prune 掉
 
 VACUUM 扫描
-  └─ heap_page_prune(OldestXmin)
-       └─ 清索引 → LP_DEAD → LP_UNUSED → VM / FSM ...
+  ├─ heap_page_prune(OldestXmin)
+  └─ 清索引 → [LP_DEAD → LP_UNUSED] → VM / FSM ...
 ```
 
 ---
@@ -206,13 +191,12 @@ ExecVacuum | vacuum
 	            heap_prune_chain /* Process this item or chain of items */
 	            heap_page_prune_execute /* Perform the actual page changes needed by heap_page_prune */
 		            ItemIdSetRedirect /* Update all redirected line pointers */
-		            ItemIdSetDead /* Update all now-dead line pointers */
-		            ItemIdSetUnused /* Update all now-unused line pointers */
+		            ItemIdSetDead     /* Update all now-dead line pointers */
+		            ItemIdSetUnused   /* Update all now-unused line pointers */
 		            PageRepairFragmentation
 			            compactify_tuples
 	            PageClearFull
 	            XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_PRUNE);
-            
 ```
 
 ---
