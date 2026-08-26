@@ -36,7 +36,7 @@ PG 9.0 起 `VACUUM FULL` 不再在原文件内搬元组，而是调用 `cluster_
 
 LP 的四种状态
 
-```
+```c
 /*
  * lp_flags has these possible states.  An UNUSED line pointer is available
  * for immediate re-use, the other states are not.
@@ -75,7 +75,11 @@ VACUUM 不以当前会话快照为准，而要求元组对**所有仍可能引�
 
 判定函数为 `HeapTupleSatisfiesVacuum`（`heapam_visibility.c`），而非查询路径的 `HeapTupleSatisfiesMVCC`。
 
-```c
+---
+
+## 4. 回收过程
+
+```text
 exec_simple_query
     PortalRun | PortalRunMulti | PortalRunUtility
         ProcessUtility | standard_ProcessUtility
@@ -93,33 +97,12 @@ exec_simple_query
                                 lazy_vacuum_all_indexes
                                 lazy_vacuum_heap_rel
                             FreeSpaceMapVacuumRange
-                        lazy_cleanup_all_indexes /* Do final index cleanup (call each index's amvacuumcleanup routine) */
-
+                        lazy_cleanup_all_indexes /* Do final index cleanup */
+                    dead_items_cleanup
+                    vac_close_indexes
+                    lazy_truncate_heap
+                    vac_update_relstats
 ```
-
----
-
-## 4. 两阶段
-
-```text
-ExecVacuum
-  vacuum
-    vacuum_rel                          /* commands/vacuum.c */
-      table_relation_vacuum
-        heapam_relation_vacuum
-          heap_vacuum_rel               /* vacuumlazy.c */
-            vacuum_get_cutoffs
-            lazy_scan_heap
-              lazy_vacuum_all_indexes   /* ambulkdelete; when dead_items full */
-              lazy_vacuum_heap_rel      /* LP_DEAD -> LP_UNUSED */
-            lazy_vacuum_all_indexes
-            lazy_vacuum_heap_rel
-            lazy_cleanup_all_indexes    /* ambulkvacuumcleanup */
-            lazy_truncate_heap
-            vac_update_relstats
-```
-
-死 TID 集合受 `maintenance_work_mem` 限制（PG 16+ 为 `TidStore`）。缓冲满则中途执行一轮 `lazy_vacuum_all_indexes` + `lazy_vacuum_heap_rel`，然后继续扫描。大表上该两阶段会重复多次。
 
 ### `lazy_scan_heap`
 
@@ -220,23 +203,6 @@ SELECT itemoffset, ctid FROM bt_page_items('tb_pkey', 1);
 HOT：仅修改 `b`，`VACUUM` 后 lp 1 为 `LP_REDIRECT`，主键仍指向 `(0,1)`。见 [update trace](../../../traces/03_update.md)。
 
 `VACUUM VERBOSE tb;` 输出扫描页数、跳过的 all-visible 页、回收行数及各索引删除项数。
-
----
-
-## 8. 源码入口
-
-- `commands/vacuum.c`：`ExecVacuum`、`vacuum`、`vacuum_rel`
-- `access/heap/vacuumlazy.c`：`heap_vacuum_rel`、`lazy_scan_heap`、`lazy_vacuum_all_indexes`、`lazy_vacuum_heap_rel`
-- `heapam_visibility.c`：`HeapTupleSatisfiesVacuum`
-- `pruneheap.c`：`heap_page_prune`
-- VM：`visibilitymap_set` / `log_heap_visible`
-- FSM：`RecordPageWithFreeSpace`
-- `access/index/indexam.c`：`index_bulk_delete` → nbtree `btbulkdelete`
-- `heapam_handler.c`：`heapam_relation_vacuum`
-- `commands/cluster.c`：`cluster_rel`（`VACUUM FULL` 与 `CLUSTER`）
-- `lock.h`：`ShareUpdateExclusiveLock`
-
-15 / 16 间函数有拆分（16+ 死 TID 使用 `TidStore`，prune 与 freeze 更常共用同一页函数），阶段划分不变。
 
 ---
 

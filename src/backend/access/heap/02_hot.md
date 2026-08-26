@@ -6,10 +6,10 @@
 
 标志在 **`t_infomask2`**（不是 `t_infomask`），低 11 bit 仍是 `natts`：
 
-| 标志                 | 值       | 打在谁身上     | 含义                         |
-| -------------------- | -------- | -------------- | ---------------------------- |
-| `HEAP_HOT_UPDATED`   | `0x4000` | 链中较旧的版本 | 下一版本是 heap-only，应跟随 |
-| `HEAP_ONLY_TUPLE`    | `0x8000` | 新版本         | 无直接索引项                 |
+| flag               | value    | which   | meaning             |
+| ------------------ | -------- | ------- | ------------------- |
+| `HEAP_HOT_UPDATED` | `0x4000` | 链中较旧的版本 | 下一版本是 heap-only，应跟随 |
+| `HEAP_ONLY_TUPLE`  | `0x8000` | 新版本     | 无直接索引项              |
 
 `t_infomask` 上的 `HEAP_UPDATED`（`0x2000`）表示「这是 UPDATE 产生的新版本」，HOT / cold 都有。
 

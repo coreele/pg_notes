@@ -119,18 +119,18 @@ PageSetPrunable(page, xid);   // heap_update / heap_delete · heapam.c
 ## 8. 流程概览
 
 ```text
-定位旧元组（Seq / Index / Bitmap 读页）
+定位旧元组（Seq / Index / Bitmap）
   └─ heap_page_prune_opt()
 
-heap_delete（旧页，exclusive lock）
-  └─ PageSetPrunable                // 不 prune、不 SetFull
+heap_delete（old page，exclusive lock）
+  └─ PageSetPrunable
 
-heap_update（旧页，exclusive lock）
+heap_update（old page，exclusive lock）
   ├─ newtupsize > pagefree
-  │    RelationGetBufferForTuple    // 换页；PG 16 此处不 prune 旧页
+  │    RelationGetBufferForTuple
   │    PageSetFull(old page)
   ├─ else 同页放入（HOT 或 cold）
-  └─ PageSetPrunable(old page)      // 总是；本次 xmax 还不能被 prune 掉
+  └─ PageSetPrunable(old page)
 
 VACUUM 扫描
   ├─ heap_page_prune(OldestXmin)
