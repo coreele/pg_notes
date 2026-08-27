@@ -1,4 +1,4 @@
-# Why & How: HOT
+# HOT
 
 ## 1. 定义
 
@@ -6,14 +6,28 @@
 
 标志在 **`t_infomask2`**（不是 `t_infomask`），低 11 bit 仍是 `natts`：
 
-| flag               | value    | which   | meaning             |
-| ------------------ | -------- | ------- | ------------------- |
+| flag               | value    | which          | meaning                      |
+| ------------------ | -------- | -------------- | ---------------------------- |
 | `HEAP_HOT_UPDATED` | `0x4000` | 链中较旧的版本 | 下一版本是 heap-only，应跟随 |
-| `HEAP_ONLY_TUPLE`  | `0x8000` | 新版本     | 无直接索引项              |
+| `HEAP_ONLY_TUPLE`  | `0x8000` | 新版本         | 无直接索引项                 |
 
 `t_infomask` 上的 `HEAP_UPDATED`（`0x2000`）表示「这是 UPDATE 产生的新版本」，HOT / cold 都有。
 
 源码：`heapam.c`（`heap_update`）、`htup_details.h`。页内缩短链、回收死版本见 [Page Prune](./03_prune.md)。上游说明：[README.HOT](./00_README.HOT.md)。
+
+```sql
+DROP TABLE IF EXISTS tb;
+
+CREATE TABLE tb (id int PRIMARY KEY, val int)
+WITH (autovacuum_enabled = off, fillfactor = 100);
+
+INSERT INTO tb values (1, 1);
+
+-- HOT 更新，产生 dead heap-only tuple（不增索引项）
+UPDATE tb SET val = val * 10 WHERE id = 1;
+
+SELECT * FROM tb;
+```
 
 ---
 
@@ -34,10 +48,10 @@ HOT 把「索引列没变」收成**单页**约束：整条链共享一个索引
 
 两条件同时成立才是 HOT update；只满足第一项叫 **HOT-safe**，仍可能因没空间而 cold：
 
-| 条件 | 判定 |
-| ---- | ---- |
-| 索引列未变 | 对索引用到的列做 **bitwise** 比较（不用类型 `=`）。表达式索引、部分索引谓词用到的列也算。 |
-| 新版本能放进**同一堆页** | 当前页空闲（必要时可先 prune）≥ 新元组。 |
+| 条件                     | 判定                                                                                      |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| 索引列未变               | 对索引用到的列做 **bitwise** 比较（不用类型 `=`）。表达式索引、部分索引谓词用到的列也算。 |
+| 新版本能放进**同一堆页** | 当前页空闲（必要时可先 prune）≥ 新元组。                                                  |
 
 无索引时同页有空就 HOT。观测索引膨胀必须先建索引。
 
