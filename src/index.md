@@ -31,4 +31,4 @@ PostgreSQL 内核学习笔记，目录镜像 `src/backend/` 源码结构；跨�
 
 ---
 
-**Maintainer**: [coreele](https://github.com/coreele/pg_notes)
+**Maintainer**: [coreele](https://github.com/coreele/pgnote)

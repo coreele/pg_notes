@@ -2,7 +2,7 @@
 
 PostgreSQL 内部机制学习笔记。侧重底层实现原理，配合源码调试记录。
 
-在线阅读: [https://coreele.github.io/pg_notes/](https://coreele.github.io/pg_notes/)
+在线阅读: [https://coreele.github.io/pgnote/](https://coreele.github.io/pgnote/)
 
 ## 本地预览（mdBook）
 

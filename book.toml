@@ -5,7 +5,7 @@ language = "en"
 
 [output.html]
 additional-css = ["theme/custom.css"]
-git-repository-url = "https://github.com/coreele"
+git-repository-url = "https://github.com/coreele/pgnote"
 git-repository-icon = "fab-github"
 
 [output.html.fold]
