@@ -90,13 +90,13 @@ PageSetPrunable(page, xid);   // heap_update / heap_delete · heapam.c
 
 ## 6. 核心函数
 
-| 函数                          | 作用                                     |
-| --------------------------- | -------------------------------------- |
+| 函数                        | 作用                                                 |
+| --------------------------- | ---------------------------------------------------- |
 | `heap_page_prune_opt()`     | 检查 hint + 视界 + 空闲启发式；非阻塞拿 cleanup lock |
-| `heap_page_prune()`         | 扫描页、规划 HOT 链变更、写 WAL                   |
-| `heap_page_prune_execute()` | 应用 redirect/dead/unused + 碎片整理         |
-| `heap_prune_chain()`        | 单条 HOT 链的 prune 逻辑                     |
-| `PageRepairFragmentation()` | 紧凑页内空闲区（`bufpage.c`）                   |
+| `heap_page_prune()`         | 扫描页、规划 HOT 链变更、写 WAL                      |
+| `heap_page_prune_execute()` | 应用 redirect/dead/unused + 碎片整理                 |
+| `heap_prune_chain()`        | 单条 HOT 链的 prune 逻辑                             |
+| `PageRepairFragmentation()` | 紧凑页内空闲区（`bufpage.c`）                        |
 
 ---
 
@@ -104,7 +104,7 @@ PageSetPrunable(page, xid);   // heap_update / heap_delete · heapam.c
 
 |           | opportunistic prune                      | lazy VACUUM        |
 | --------- | ---------------------------------------- | ------------------ |
-| 触发      | 扫描读页（含 UPDATE/DELETE 定位元组） | `VACUUM` 命令      |
+| 触发      | 扫描读页（含 UPDATE/DELETE 定位元组）    | `VACUUM` 命令      |
 | 视界      | `GlobalVisTest` / `InvalidTransactionId` | `OldestXmin`       |
 | 空间条件  | 页快满才做                               | 无                 |
 | 索引      | 不碰                                     | 清 dead 索引项     |

@@ -75,33 +75,70 @@ VACUUM 不以当前会话快照为准，而要求元组对**所有仍可能引�
 
 判定函数为 `HeapTupleSatisfiesVacuum`（`heapam_visibility.c`），而非查询路径的 `HeapTupleSatisfiesMVCC`。
 
+```c
+/* Result codes for HeapTupleSatisfiesVacuum */
+typedef enum
+{
+	HEAPTUPLE_DEAD,				/* tuple is dead and deletable */
+	HEAPTUPLE_LIVE,				/* tuple is live (committed, no deleter) */
+	HEAPTUPLE_RECENTLY_DEAD,	/* tuple is dead, but not deletable yet */
+	HEAPTUPLE_INSERT_IN_PROGRESS,	/* inserting xact is still in progress */
+	HEAPTUPLE_DELETE_IN_PROGRESS	/* deleting xact is still in progress */
+} HTSV_Result;
+```
+
 ---
 
 ## 4. 回收过程
 
-```text
-exec_simple_query
-    PortalRun | PortalRunMulti | PortalRunUtility
-        ProcessUtility | standard_ProcessUtility
-            ExecVacuum  | vacuum | vacuum_rel
-                table_relation_vacuum
-                  heap_vacuum_rel
-                    vacuum_get_cutoffs
-                        GetOldestNonRemovableTransactionId
-                            ComputeXidHorizons
-                    dead_items_alloc
-                    lazy_scan_heap /* workhorse function for VACUUM */
-                        for (blkno = 0; blkno < rel_pages; blkno++)
-                            lazy_scan_prune /* Prune, freeze, and count tuples */
-                            lazy_vacuum /* index vacuuming and heap vacuuming */
-                                lazy_vacuum_all_indexes
-                                lazy_vacuum_heap_rel
-                            FreeSpaceMapVacuumRange
-                        lazy_cleanup_all_indexes /* Do final index cleanup */
-                    dead_items_cleanup
-                    vac_close_indexes
-                    lazy_truncate_heap
-                    vac_update_relstats
+```c
+ExecVacuum | vacuum /* vacuum relations or all releated tables */
+    vacuum_rel
+        /* or cluster_rel for vacuum full */
+        table_relation_vacuum | heap_vacuum_rel /* perform VACUUM for one heap relation */
+            lazy_scan_heap      /* heap pruning + index vac + heap vac */
+                lazy_scan_prune /* prune heap pages */
+                    heap_page_prune /* prune one page */
+                        heap_prune_satisfies_vacuum /* tuple visibility checks */
+                        heap_prune_chain /* process all line pointer */
+                        heap_page_prune_execute
+                            ItemIdSetRedirect /* Update all redirected line pointers */
+          		            ItemIdSetDead     /* Update all now-dead line pointers */
+          		            ItemIdSetUnused   /* Update all now-unused line pointers */
+          		            PageRepairFragmentation
+         			            compactify_tuples
+                        PageClearFull
+                        MarkBufferDirty
+                        XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_PRUNE)
+
+                    heap_prepare_freeze_tuple
+                    heap_freeze_execute_prepared /* freeze heap tuples */
+                        heap_execute_freeze_tuple /* Execute the prepared freezing of a tuple with caller's freeze plan */
+                        MarkBufferDirty
+                        XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_FREEZE_PAGE);
+                lazy_vacuum     /* index vacuuming */
+                    lazy_vacuum_all_indexes
+                        lazy_vacuum_one_index | vac_bulkdel_one_index /* vacuum index relation */
+                            index_bulk_delete | IndexAmRoutine::ambulkdelete
+                                btbulkdelete
+                                    _bt_start_vacuum
+                                    btvacuumscan
+                                        btvacuumpage
+                                    _bt_end_vacuum
+                    lazy_vacuum_heap_rel /* LP_DEAD -> LP_UNUSED */
+                        lazy_vacuum_heap_page
+                            ItemIdSetUnused
+                            PageTruncateLinePointerArray
+                            MarkBufferDirty
+                            XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_VACUUM);
+                FreeSpaceMapVacuumRange
+                    lazy_cleanup_one_index
+                        vac_cleanup_one_index
+                            index_vacuum_cleanup | IndexAmRoutine::amvacuumcleanup
+                                btvacuumcleanup
+            lazy_truncate_heap
+            vac_update_relstats /* update stats */
+    vac_update_datfrozenxid
 ```
 
 `lazy_scan_heap`
@@ -125,7 +162,7 @@ exec_simple_query
 
 > cold update 见 [update trace](../../../traces/03_update.md)：索引中 `(0,1)` 删除之后，lp 1 才可改为 `LP_UNUSED`。HOT 在 vacuum 后常见 `LP_REDIRECT`，索引仍指向 root。
 
-### 收尾
+收尾
 
 - `lazy_cleanup_all_indexes`：`ambulkvacuumcleanup`（b-tree 回收空页、更新 `reltuples`）。
 - `lazy_truncate_heap`：表尾连续空页时缩小文件；并发扫描可能导致截断放弃。文件中部空洞不会消失。
@@ -202,7 +239,7 @@ FROM heap_page_items(get_raw_page('tb', 0));
 -- 4 entries: a=1,2,3,22
 SELECT itemoffset, ctid FROM bt_page_items('tb_pkey', 1);
 
-VACUUM VERBOSE tb;
+VACUUM FREEZE VERBOSE tb;
 
 -- after VACUUM: changes on lp 1-3
 SELECT lp, lp_off, lp_flags

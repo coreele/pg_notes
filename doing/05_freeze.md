@@ -1,139 +1,153 @@
 # Freeze（元组冻结）
 
-## 1. 定义
+**概要**：XID 仅 32 位，用尽后会回绕。若页中老元组的 `xmin` 与当前 XID 的间隔逼近 2³¹，该元组会被误判为「未来事务插入」而不可见。freeze 在回绕临近前，将足够老的元组标记为**永久已提交**：此后判定可见性无需再查询 `pg_xact`（clog）。由此 `relfrozenxid` 得以推进，clog 得以截断。
 
-**Freeze**：把存活元组中**老于冻结视界**的 XID / MultiXactId 从可见性判定中抹除，使元组对所有当前与未来快照**永远视为「过去」**，从而推进 `relfrozenxid`、防止 XID 回卷（wraparound），并让 `pg_xact`（clog）得以截断回收。**不删元组、不改数据内容，只改写 tuple 头的 xmin/xmax/xvac 与 infomask。**
-
-freeze 没有独立入口，作为 lazy `VACUUM` 扫页的一部分在 `lazy_scan_prune()` 中执行。对照：[Page Prune](../src/backend/access/heap/03_prune.md) · [Lazy VACUUM](../src/backend/access/heap/04_vacuumlazy.md) · [VM](../src/backend/access/heap/01_vm.md)。
-
-源码：判定与执行在 `access/heap/heapam.c`（PG 17 起拆出 `heapfreeze.c`），VACUUM 集成在 `vacuumlazy.c`，cutoff 计算在 `commands/vacuum.c` 的 `vacuum_get_cutoffs()`。
-
-| 路径                       | 入口                                    | 特点                                               |
-| -------------------------- | --------------------------------------- | -------------------------------------------------- |
-| 普通 VACUUM / autovacuum   | `lazy_scan_prune()`                     | XID < `FreezeLimit` 时必须冻；否则 VACUUM 自主决定 |
-| anti-wraparound autovacuum | 同上（`is_wraparound` → aggressive）    | `relfrozenxid` 过老时自动发起，绕过阈值缩放        |
-| `VACUUM FREEZE`            | 同上（四个 freeze age 全部置 0）        | 尽量全冻                                           |
-| `CLUSTER` / `VACUUM FULL`  | `rewriteheap.c` → `heap_freeze_tuple()` | 重写新堆时顺手冻结；不写单条 WAL，随整体重写落盘   |
-| WAL replay                 | `heap_xlog_freeze_page()`               | 应用 `XLOG_HEAP2_FREEZE_PAGE`                      |
+**阅读建议**：首次阅读 §1–§4 建立整体认识，再运行 §11.1 的实验观察 infomask 位变化与 `relfrozenxid` 推进。§5–§7 为实现细节（两阶段处理、WAL、追踪器）。§8–§10 分别给出防御阈值、核心函数与流程速查，可按需查阅。相关笔记见 §12。
 
 ---
 
-## 2. 为何需要：32-bit XID 回卷
+## 1. 问题：32 位 XID 会回绕
 
-XID 是 32 位环形整数，比较语义为模 2³² 的有符号差：`TransactionIdPrecedes(a,b) ≡ (int32)(a-b) < 0`。「过去」与「未来」各占 2³¹。若放任某元组的 `xmin` 与当前 `nextXID` 的距离逼近 2³¹，这个老元组会被误判为「未来」事务插入 → 突然不可见，**数据凭空消失**。
-
-对策：在距离 2³¹ 还有充足余量时冻结老元组。冻结带来三件事：
-
-1. **可见性**：`HEAP_XMIN_FROZEN` 使任何快照无需查 clog 直接判可见；
-2. **推进 `relfrozenxid`**：`pg_class.relfrozenxid` 语义为「表中所有 XID < relfrozenxid 的元组都已被冻结（或不存在）」，它给出表内仍需查 clog 的 XID 下界；
-3. **clog 截断**：全库最老的 `datfrozenxid` 之前的 `pg_xact` 段可删（`vac_truncate_clog`，见 [CLOG](../src/backend/access/transam/09_clog.md)）。
-
-`xmax`、MultiXactId 同理：未冻结的 lock/update 痕迹同样会拖住 `relfrozenxid` / `relminmxid`，所以 freeze 必须连同 `xmax`（含 multi 成员）一起处理。
-
----
-
-## 3. Frozen 长什么样：infomask 标记，不改写 xmin
+每个事务被分配一个 XID，记录于元组的 `xmin` / `xmax` 字段，作为可见性判定的依据。由于 XID 仅 32 位，约 42 亿个即告耗尽，PostgreSQL 将其视为环形计数器：分配至 2³²−1 后回绕至 3，先后关系按模 2³² 的有符号差计算：
 
 ```c
-#define HEAP_XMIN_COMMITTED 0x0100
-#define HEAP_XMIN_INVALID   0x0200
-#define HEAP_XMIN_FROZEN    (HEAP_XMIN_COMMITTED | HEAP_XMIN_INVALID)  /* 0x0300 */
+TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 「过去」与「未来」各占 2³¹ */
 ```
 
-- PG 9.4 起 freeze **不再把 xmin 改写成** `FrozenTransactionId`（2），只置 `HEAP_XMIN_FROZEN` 位，原始 xmin 保留（对调试、pg_upgrade 有价值）；
-- `HeapTupleHeaderGetXmin()` 对 frozen tuple 返回 `FrozenTransactionId`（`htup_details.h`），可见性代码对外透明；
-- 只有 `xvac` 字段（9.0 以前老式 `VACUUM FULL` 的 `HEAP_MOVED_OFF/IN` 遗留）仍会真的写入 2 / Invalid——今天几乎见不到，但代码必须继续处理。
+由此产生一个问题：设某元组 `xmin = 5`（对应早已提交的事务），只要系统持续分配 XID，该值与 `nextXID` 的间隔便不断增大。当间隔逼近 2³¹ 时，`(int32)(5 - nextXID)` 的符号发生翻转，该元组将被判定为「未来事务插入」，对所有快照不可见，等价于数据丢失；且若 clog 已截断，其提交记录亦无从查证。
 
-实测（见 §12）：新插入行 `t_infomask = 2048`（`HEAP_XMAX_INVALID`）；`VACUUM FREEZE` 后 `= 2816`（追加 0x0300），`t_xmin` 数值不变。
+对策（freeze）：在间隔逼近 2³¹ 之前，将老元组的可见性判定由「依据 XID 与 clog」改为「永久可见」。一次冻结产生三项结果：
 
----
+1. **可见性**：设置 `HEAP_XMIN_FROZEN` 后，任何快照无需查询 clog 即可判定该元组可见；
+2. **推进 `relfrozenxid`**：该字段语义为「表中所有 `XID < relfrozenxid` 的元组均已冻结（或不存在）」，即表内仍需查询 clog 的 XID 下界；其值推进越远，后续冻结工作量越小；
+3. **clog 截断**：全库各表 `relfrozenxid` 的最小值记录于 `datfrozenxid`，早于该值的 `pg_xact` 段可由 `vac_truncate_clog()` 删除。
 
-## 4. cutoffs 体系：`vacuum_get_cutoffs()`
-
-| cutoff                    | 计算（默认值）                                                                | 语义                                 |
-| ------------------------- | ----------------------------------------------------------------------------- | ------------------------------------ |
-| `OldestXmin`              | `GetOldestNonRemovableTransactionId()`（≈ nextXID）                           | 死元组回收视界；**逐元组冻结视界**   |
-| `OldestMxact`             | `GetOldestMultiXactId()`                                                      | multi 版                             |
-| `FreezeLimit`             | `nextXID - vacuum_freeze_min_age`（5000 万），并 clamp 到 ≤ `OldestXmin`      | XID < 它 ⇒ **必须冻结**              |
-| `MultiXactCutoff`         | `nextMXID - vacuum_multixact_freeze_min_age`（500 万），clamp ≤ `OldestMxact` | MXID 版                              |
-| `relfrozenxid/relminmxid` | `pg_class` 当前值                                                             | 本次推进的起点，也是扫描中的安全下界 |
-
-两个容易混淆的视界要分清：
-
-- **`FreezeLimit` 决定「是否必须冻结」**：`heap_tuple_should_freeze()` 检查 xmin/xmax/xvac 及 multi 每个成员，任一 < `FreezeLimit`（或 MXID < `MultiXactCutoff`）⇒ 页 `freeze_required = true`，VACUUM 无权跳过；
-- **`OldestXmin` 决定「冻到多老」**：`freeze_xmin = xmin < OldestXmin`。既然已决定动手，就顺手把所有 < `OldestXmin` 的 XID 全冻掉，让 `relfrozenxid` 尽量推远，推迟下次劳动。`FreezeLimit ≤ OldestXmin`，所以后者更宽。
-
-age 参数的 GUC 约束（防 anti-wraparound 过于频繁）：`freeze_min_age ≤ autovacuum_freeze_max_age / 2`；`freeze_table_age ≤ 0.95 × autovacuum_freeze_max_age`。
+`xmax` 与 MultiXactId 同理：未冻结的锁 / update 痕迹同样会推迟 `relfrozenxid` / `relminmxid` 的推进，因此 freeze 须连同 `xmax`（含 multi 成员）一并处理。
 
 ---
 
-## 5. 触发路径与 aggressive
+## 2. 冻结的表示：置位而不改写 xmin
 
-### 5.1 谁触发
+冻结并非改写数据，而是修改元组头 `infomask` 的两个位，合成「永久已提交」标记：
 
-- **普通 VACUUM**：扫到哪冻到哪，`freeze_required` 的页必须冻；
-- **autovacuum**：某表 `relfrozenxid` 年龄超过 `autovacuum_freeze_max_age`（默认 2 亿）⇒ 强制发起 anti-wraparound vacuum（`is_wraparound = true`，可绕开多数成本节流）；空表也要做——否则它自己就是全库最老；
-- **`VACUUM FREEZE`**：四个 freeze age 全置 0 ⇒ aggressive + 尽量全冻。
+```c
+#define HEAP_XMIN_COMMITTED 0x0100   /* hint bit：xmin 已提交 */
+#define HEAP_XMIN_INVALID   0x0200   /* 单独出现时表示 xmin 已 abort */
+#define HEAP_XMIN_FROZEN    (HEAP_XMIN_COMMITTED | HEAP_XMIN_INVALID)  /* = 0x0300：永久已提交 */
+```
 
-### 5.2 aggressive 的含义
+要点：
 
-`vacuum_get_cutoffs()` 返回值：`relfrozenxid ≤ nextXID - freeze_table_age`（`vacuum_freeze_table_age` 默认 1.5 亿）时为 aggressive。**aggressive = 「必须把 relfrozenxid 至少推进到 FreezeLimit」**，因此：
+- **不改写 xmin**：自 PG 9.4 起，冻结仅设置 `HEAP_XMIN_FROZEN`，保留原始 xmin（便于调试与 pg_upgrade）。`HeapTupleHeaderGetXmin()` 对冻结元组返回 `FrozenTransactionId`，可见性代码无需感知该标记；
+- **位的组合语义**：`COMMITTED | INVALID` 在正常事务流程中不可能同时出现；冻结后该组合表示「元组已永久提交，与 XID 环位置无关」；
+- **唯一例外 `xvac`**：该字段（PG 9.0 之前 `VACUUM FULL` 的 `HEAP_MOVED_OFF/IN` 遗留）仍会写入 `FrozenTransactionId` / Invalid。现代版本中已极少出现，但代码仍需兼容。
 
-- `lazy_scan_skip()` 跳页规则收紧：非 aggressive 可跳过 all-visible 区间（≥ 32 页连续）；aggressive **只能跳 all-frozen 页**——all-visible 页仍可能有 < FreezeLimit 的未冻结 XID；
-- 拿不到 cleanup lock 的页：`lazy_scan_noprune()` 只收集 LP_DEAD 后返回 false，**等待并重试** `lazy_scan_prune()`（普通 VACUUM 则先跳过）；
-- `VACUUM (DISABLE_PAGE_SKIPPING)` 也强制 aggressive 且连 all-frozen 页都不跳。
-
-> 注意：手工 `VACUUM` 不读表级 reloption 的 `autovacuum_freeze_*`，那是 autovacuum 专用；手工路径用 GUC（`SET vacuum_freeze_table_age = 0` 即可演示 aggressive）。
+实测（见 §11.1）：新插入行 `t_infomask = 2048`（`HEAP_XMAX_INVALID`）；`VACUUM FREEZE` 后变为 `2816 = 2048 | 0x0300`，`t_xmin` 数值不变。
 
 ---
 
-## 6. freeze 怎么做：`lazy_scan_prune()` 两阶段
+## 3. 冻结判据：两个视界
 
-### 6.1 prepare（锁内、临界区外，可查 clog / multixact）
+冻结前需分别判定两个问题，各对应一个 cutoff：
 
-prune 之后对每个 `LP_NORMAL` 元组先过 `HeapTupleSatisfiesVacuum`（DEAD 的早被 prune/删除，走不到 freeze），再调 `heap_prepare_freeze_tuple()`，在内存中攒 `HeapTupleFreeze` 计划（目标 xmax / infomask / frzflags / checkflags），同时维护页级 `HeapPageFreeze` 状态。逐字段判定：
+| 问题 | cutoff | 规则 |
+| --- | --- | --- |
+| ① 本页是否存在回卷风险？ | `FreezeLimit` | `xmin < FreezeLimit` ⇒ 必须冻结，VACUUM 不得跳过 |
+| ② 可将冻结范围扩展至多老？ | `OldestXmin` | 事务已结束于 `OldestXmin` 之前者，可一并冻结，以尽量推进 `relfrozenxid` |
 
-| 字段          | 冻结条件                 | 动作                                                           |
-| ------------- | ------------------------ | -------------------------------------------------------------- |
-| xmin          | `xmin < OldestXmin`      | `infomask \|= HEAP_XMIN_FROZEN`；执行时复核 committed          |
-| xmax（普通）  | `xmax < OldestXmin`      | 清空 xmax，置 `HEAP_XMAX_INVALID`；非 lock-only 则复核 aborted |
-| xmax（multi） | 见 `FreezeMultiXactId()` | 四种结果，见下                                                 |
-| xvac          | 存在即冻                 | 写 `FrozenTransactionId` / Invalid                             |
+- ② 的范围包含 ①：`FreezeLimit` 被 clamp 至 ≤ `OldestXmin`。① 为防止回卷的安全底线；② 为减少后续冻结工作量的成本优化。
+- MultiXact 对应一对 cutoff：`MultiXactCutoff`（必须冻结）与 `OldestMxact`（可扩展范围）。
 
-- committed updater 的 xmax 不可能 < `OldestXmin`（否则整元组早已 DEAD 被移除），所以能走到 freeze_xmax 的只有 lock-only 与 aborted updater；
-- **checkflags 复核不信任 hint bit**：`HEAP_FREEZE_CHECK_XMIN_COMMITTED` / `HEAP_FREEZE_CHECK_XMAX_ABORTED` 在执行阶段的临界区**外**查 clog（昂贵，不能反复做），失败即 `DATA_CORRUPTED`。
+**示例**（数值为示意）：设 `nextXID = 1000`、`vacuum_freeze_min_age = 100` ⇒ `FreezeLimit = 900`；`OldestXmin ≈ 998`。则页内 `xmin = 850` 的元组必须冻结；`xmin = 950` 的元组非强制（> 900），但可一并冻结；`xmin = 999` 对应事务可能仍在运行（≥ `OldestXmin`），不可冻结。
 
-`FreezeMultiXactId()` 的四种结果（除 NOOP 外都强制 `freeze_required`）：
+cutoff 的计算来源（`vacuum_get_cutoffs()`；默认参数见括号）：
 
-| flags                 | 场景                               | 动作                                               |
-| --------------------- | ---------------------------------- | -------------------------------------------------- |
-| `FRM_NOOP`            | multi 还新（成员可能 in-progress） | 原样保留；只回退 NoFreeze 追踪器                   |
-| `FRM_INVALIDATE_XMAX` | 老 multi 且 lock-only / 成员皆可弃 | 直接清空 xmax                                      |
-| `FRM_RETURN_IS_XID`   | 只剩一个 updater 成员              | 用普通 XID 替换 multi（可附 `FRM_MARK_COMMITTED`） |
-| `FRM_RETURN_IS_MULTI` | ≥ 2 个存活成员                     | **分配新 multi** 只含存活成员（尽量避免）          |
+| cutoff | 计算 |
+| --- | --- |
+| `FreezeLimit` | `nextXID − vacuum_freeze_min_age`（5000 万），再 clamp ≤ `OldestXmin` |
+| `OldestXmin` | `GetOldestNonRemovableTransactionId()`：仍可能被某快照引用的最老事务 |
+| `MultiXactCutoff` | `nextMXID − vacuum_multixact_freeze_min_age`（500 万），clamp ≤ `OldestMxact` |
+| `OldestMxact` | `GetOldestMultiXactId()` |
 
-主动处理 multi 是为了不让老 multi 拖住 `relminmxid` 并减少 SLRU 反复访问。
+防止 anti-wraparound 触发过频的 GUC 约束：`freeze_min_age ≤ autovacuum_freeze_max_age / 2`；`freeze_table_age ≤ 0.95 × autovacuum_freeze_max_age`。
 
-### 6.2 decide & execute（临界区内原子完成）
+---
 
-prepare 完成后按页决策，**满足任一条件即走 freeze path**：
+## 4. 触发路径与 aggressive 模式
+
+freeze 无独立命令入口，作为 lazy `VACUUM` 扫描页面的一部分在 `lazy_scan_prune()` 中执行。是否实际执行冻结取决于触发路径：
+
+| 入口 | 触发条件 |
+| --- | --- |
+| 普通 `VACUUM` / autovacuum | 页内存在 < `FreezeLimit` 的 XID 时强制冻结；否则是否附带冻结由 VACUUM 依据成本决定 |
+| anti-wraparound autovacuum | 表 `relfrozenxid` 年龄超过 `autovacuum_freeze_max_age`（默认 2 亿）时自动发起，可绕过多数成本限制；空表同样处理（避免其 `relfrozenxid` 成为全库最老） |
+| `VACUUM FREEZE` | 将四个 freeze age 全部置 0，尽量全冻 |
+| `CLUSTER` / `VACUUM FULL` | `rewriteheap.c` 重写新堆时调用 `heap_freeze_tuple()`；不单独写 WAL，随整体重写落盘 |
+| WAL replay | `heap_xlog_freeze_page()` 应用 `XLOG_HEAP2_FREEZE_PAGE` |
+
+**aggressive 模式**：当 `relfrozenxid ≤ nextXID − freeze_table_age`（默认 1.5 亿；`VACUUM FREEZE` 因 age 置 0 必然触发）时，VACUUM 进入 aggressive 模式，目标为「至少将 `relfrozenxid` 推进至 `FreezeLimit`」。因此：
+
+- 页面跳过条件收紧：普通 VACUUM 可跳过连续 ≥ 32 页的 all-visible 区间；aggressive 仅可跳过 all-frozen 页——all-visible 页内仍可能残留 < `FreezeLimit` 的未冻结 XID；
+- 未能取得 cleanup lock 的页：普通 VACUUM 直接跳过；aggressive 由 `lazy_scan_noprune()` 仅收集 LP_DEAD 后返回 false，等待并重试 `lazy_scan_prune()`；
+- `VACUUM (DISABLE_PAGE_SKIPPING)` 强制 aggressive，且连 all-frozen 页也不跳过。
+
+> 注意：手工 `VACUUM` 不读取表级 reloption 的 `autovacuum_freeze_*`（仅 autovacuum 使用），手工路径通过 GUC 控制：`SET vacuum_freeze_table_age = 0` 可触发 aggressive。
+
+---
+
+## 5. 冻结执行：prepare 与 execute 两阶段
+
+冻结实现分为两阶段：prepare 可能读取 clog / multixact（代价较高），在临界区外执行；execute 改写 tuple 头并写入 WAL，在临界区内原子完成，以尽量缩短持锁时间。
+
+源码：判定与执行在 `access/heap/heapam.c`（PG 17 起拆出 `heapfreeze.c`），VACUUM 集成在 `vacuumlazy.c`，cutoff 计算在 `commands/vacuum.c`。
+
+### 5.1 prepare：逐元组构造冻结计划
+
+prune 之后，对每个 `LP_NORMAL` 元组先用 `HeapTupleSatisfiesVacuum` 确认其存活（DEAD 元组在 prune 阶段已被移除，不会进入冻结流程），再调用 `heap_prepare_freeze_tuple()`，在内存中构造 `HeapTupleFreeze` 计划（目标 xmax / infomask / frzflags / checkflags），同时维护页级 `HeapPageFreeze` 状态。各字段的判定如下：
+
+| 字段 | 冻结条件 | 动作 |
+| --- | --- | --- |
+| `xmin` | `< OldestXmin` | `infomask |= HEAP_XMIN_FROZEN`；执行时复核 committed |
+| `xmax`（普通） | `< OldestXmin` | 清空 xmax、置 `HEAP_XMAX_INVALID`；非 lock-only 则复核 aborted |
+| `xmax`（multi） | `FreezeMultiXactId()` | 四种处理结果，见下 |
+| `xvac` | 存在即冻结 | 写入 `FrozenTransactionId` / Invalid |
+
+两点说明：
+
+- 已提交 updater 的 xmax 不可能 < `OldestXmin`（否则整个元组早已 DEAD 并被移除），因此进入 freeze_xmax 路径的仅有 **lock-only 与 aborted updater**；
+- **不信任 hint bit**：checkflags（如 `HEAP_FREEZE_CHECK_XMIN_COMMITTED`）要求在执行阶段的临界区之外复核 clog（代价高，不能反复执行），复核失败即报 `DATA_CORRUPTED`。
+
+`FreezeMultiXactId()` 的四种处理结果（除 NOOP 外均强制 `freeze_required`）：
+
+| flags | 场景 | 动作 |
+| --- | --- | --- |
+| `FRM_NOOP` | multi 尚新（成员可能 in-progress） | 原样保留，仅回退 NoFreeze 追踪器 |
+| `FRM_INVALIDATE_XMAX` | 旧 multi 且 lock-only / 成员均可弃 | 直接清空 xmax |
+| `FRM_RETURN_IS_XID` | 仅剩一个 updater 成员 | 以普通 XID 替换 multi（可附 `FRM_MARK_COMMITTED`） |
+| `FRM_RETURN_IS_MULTI` | ≥ 2 个存活成员 | 分配仅含存活成员的新 multi（尽量避免） |
+
+处理 multi 的目的：避免旧 multi 推迟 `relminmxid` 的推进，并减少对 SLRU 的重复访问。
+
+### 5.2 decide & execute：临界区内原子执行
+
+按页决策，满足下列任一条件即进入 freeze path：
 
 ```text
-pagefrz.freeze_required                                    -- 有 XID < FreezeLimit，必须冻
-OR tuples_frozen == 0                                      -- 无计划可执行，零成本；且页可因此置 all-frozen
-OR (all_visible && all_frozen && prune 已产生 FPI)          -- 反正要写 WAL，顺手冻满以置 all-frozen
+pagefrz.freeze_required                             -- 页内含 < FreezeLimit 的 XID，必须冻结
+OR tuples_frozen == 0                               -- 无任何冻结计划，执行代价可忽略；且页面因此可标记 all-frozen
+OR (all_visible && all_frozen && prune 已产生 FPI)   -- 页面因 prune 已生成 FPI、必然写 WAL，可一并完成冻结
 ```
 
-- **freeze path**：`heap_freeze_execute_prepared()` 临界区内逐个 `heap_execute_freeze_tuple()` + WAL（§7）；页级追踪器取 `FreezePageRelfrozenXid/RelminMxid`；
-- **no-freeze path**：追踪器取 `NoFreezePage*`（回退到页内仍残留的最老 XID），并强制 `all_frozen = false` —— **只有走过 freeze path 的页才可能被标记 VM all-frozen**。
+- **freeze path**：`heap_freeze_execute_prepared()` 在临界区内逐元组调用 `heap_execute_freeze_tuple()` 并写 WAL（§6）；页级追踪器采用 `FreezePageRelfrozenXid/RelminMxid`；
+- **no-freeze path**：追踪器采用 `NoFreezePage*`（回退至页内仍残留的最老 XID），并强制 `all_frozen = false`——仅执行 freeze path 的页面才可能被标记为 VM all-frozen。
 
-`totally_frozen`（每个存活元组的 xmin/xmax 均已冻或将冻）累积出页级 `all_frozen`；连同 `all_visible` 供 `lazy_scan_heap` 决定 `visibilitymap_set(..., ALL_VISIBLE | ALL_FROZEN)`。
+当各存活元组的 xmin/xmax 均已（或将）冻结（`totally_frozen`）时，页级 `all_frozen` 成立；其与 `all_visible` 共同决定 `lazy_scan_heap` 是否调用 `visibilitymap_set(..., ALL_VISIBLE | ALL_FROZEN)`。
 
 ---
 
-## 7. WAL：`XLOG_HEAP2_FREEZE_PAGE`
+## 6. WAL 记录：冻结必须持久化
 
-冻结**不是 hint**，必须 redo（源码注释明言）：relfrozenxid 推进 + clog 截断后，一旦崩溃丢掉冻结记录，xmin 的状态将无处可查。记录结构：
+冻结修改并非 hint bit，不能丢失。原因：若 `relfrozenxid` 已推进、clog 已按 `datfrozenxid` 截断，此后发生崩溃并丢失冻结记录，则元组 xmin 的真实提交状态将无从查询。因此每次冻结均写入 `XLOG_HEAP2_FREEZE_PAGE`：
 
 ```text
 xl_heap_freeze_page { snapshotConflictHorizon, isCatalogRel, nplans }
@@ -141,64 +155,58 @@ plans[]   /* 去重后的冻结计划: xmax / infomask / infomask2 / frzflags / 
 offsets[] /* 按 plan 分组的元组偏移 */
 ```
 
-- **计划去重**（`heap_log_freeze_plan`）：同页大量元组往往共享同一冻结动作，排序合并后 WAL 里只存一份 plan + 一串 offset；
-- `snapshotConflictHorizon`：页将 all-frozen 时用 `visibility_cutoff_xid`（该值随即清空，后续 `visibilitymap_set` 可传 Invalid）；否则保守取 `OldestXmin - 1`，避免 hot standby 误冲突；
-- redo（`heap_xlog_freeze_page`）：hot standby 先 `ResolveRecoveryConflictWithSnapshot`，再逐 plan 逐 offset 重放 `heap_execute_freeze_tuple`。
+- **计划去重**（`heap_log_freeze_plan`）：同页多数元组共享相同的冻结动作，排序合并后每条 plan 只记录一份，并附带元组偏移序列；
+- **`snapshotConflictHorizon`**：页面即将标记 all-frozen 时取 `visibility_cutoff_xid`（该值随即清空，之后的 `visibilitymap_set` 可传 Invalid）；否则保守取 `OldestXmin − 1`，避免与 hot standby 快照冲突；
+- **redo**（`heap_xlog_freeze_page`）：hot standby 先执行 `ResolveRecoveryConflictWithSnapshot`，再按 plan / offset 重放 `heap_execute_freeze_tuple`。
 
 ---
 
-## 8. relfrozenxid 推进与 VM all-frozen
+## 7. 收尾：relfrozenxid 推进与 VM all-frozen
 
-### 8.1 NewRelfrozenXid 追踪器
+**NewRelfrozenXid 追踪器**：`vacrel->NewRelfrozenXid` 初始化为 `OldestXmin`（乐观上界），扫描中每遇未冻结而残留的老 XID（含 multi 成员）即回退；该值不会低于表原有的 `relfrozenxid`（即本次扫描的安全下界）。每页按 §5.2 的决策，择一提交 FreezePage* 或 NoFreezePage* 两套追踪器。收尾规则：
 
-`vacrel->NewRelfrozenXid` 初始 = `OldestXmin`（最乐观），随扫描中**未冻结而残留**的老 XID（含 multi 成员）逐页回退；两种页级结局各有一套追踪器（FreezePage\* / NoFreezePage\*），按 §6.2 的决策择一提交。收尾规则：
-
-- **aggressive**：最终值必须 ≥ `FreezeLimit`（有断言保证）；若因跳过 all-visible 页（`skippedallvis`）等导致无法证明安全，则**保留原 relfrozenxid**；
+- **aggressive**：最终值必须 ≥ `FreezeLimit`（有断言保证）；若因跳过页面（如 `skippedallvis`）无法证明该下界，则保留原 `relfrozenxid`；
 - **非 aggressive**：可推进任意幅度，也可不推进；
-- `vac_update_relstats()` 写回 `pg_class`；全库各库 `datfrozenxid` 的最小值驱动 `vac_truncate_clog()`。
+- `vac_update_relstats()` 将结果写回 `pg_class.relfrozenxid` / `relminmxid`；全库各数据库 `datfrozenxid` 的最小值驱动 `vac_truncate_clog()`。
 
-### 8.2 VM all-frozen
-
-- 置位条件：freeze path + `all_visible` + `all_frozen` + 无 LP_DEAD；`lazy_scan_heap` 持堆页锁置 `PD_ALL_VISIBLE` 并 `visibilitymap_set`（WAL：`log_heap_visible`）；
-- all-frozen 只能建在 all-visible 之上；DML / tuple lock 破坏页则清位（见 [VM](../src/backend/access/heap/01_vm.md)）；
-- 收益：aggressive VACUUM 也**能跳过 all-frozen 页**（不可能再含 < FreezeLimit 的 XID）——freeze 是一次投入、长期免扫。
+**VM all-frozen**：置位条件为「页面执行 freeze path、`all_visible` 与 `all_frozen` 均成立、且无 LP_DEAD」。`lazy_scan_heap` 持堆页锁设置 `PD_ALL_VISIBLE` 并调用 `visibilitymap_set`（WAL：`log_heap_visible`）。DML / tuple lock 破坏页内状态时相应清除标记（见 [VM](../src/backend/access/heap/01_vm.md)）。收益：all-frozen 页不再包含 < `FreezeLimit` 的 XID，aggressive VACUUM 亦可跳过，后续无需重复冻结。
 
 ---
 
-## 9. wraparound 防线阶梯
+## 8. 进阶：wraparound 防御阈值与 failsafe
 
-`SetTransactionIdLimit()`（`varsup.c`）按全库最老 `datfrozenxid` 计算各道防线：
+`SetTransactionIdLimit()`（`varsup.c`）以全库最老 `datfrozenxid` 为基准设置四级阈值：
 
-| 防线       | 阈值（默认）                                 | 动作                                                    |
-| ---------- | -------------------------------------------- | ------------------------------------------------------- |
-| autovacuum | `oldest + autovacuum_freeze_max_age`（2 亿） | 触发 anti-wraparound autovacuum（并逐库连续处理）       |
-| WARNING    | `wrapLimit - 4000 万`                        | "database must be vacuumed within N transactions"       |
-| 停止分配   | `wrapLimit - 300 万`                         | 拒绝分配新 XID（只读不受影响；单用户模式留给 DBA 抢救） |
-| wrapLimit  | `oldest + 2³¹`                               | 理论回卷点，不可越过                                    |
+| 阈值 | 取值（默认） | 动作 |
+| --- | --- | --- |
+| autovacuum | `oldest + autovacuum_freeze_max_age`（2 亿） | 触发 anti-wraparound autovacuum（并逐库连续处理） |
+| WARNING | `wrapLimit − 4000 万` | 输出日志 "database must be vacuumed within N transactions" |
+| 停止分配 | `wrapLimit − 300 万` | 拒绝分配新 XID（只读不受影响；单用户模式供 DBA 恢复） |
+| wrapLimit | `oldest + 2³¹` | 理论回绕点，不可越过 |
 
-**failsafe**（`vacuum_xid_failsafe_check`，PG 12+）：表 `relfrozenxid` 老于 `max(vacuum_failsafe_age, 1.05 × autovacuum_freeze_max_age)`（默认 16 亿）时，进行中的 aggressive VACUUM 放弃索引清理与截断，只求尽快推进 `relfrozenxid`。
-
----
-
-## 10. 核心函数
-
-| 函数                             | 作用                                                             |
-| -------------------------------- | ---------------------------------------------------------------- |
-| `vacuum_get_cutoffs()`           | 计算 OldestXmin / FreezeLimit / MultiXactCutoff，判定 aggressive |
-| `lazy_scan_prune()`              | prune + 逐元组 prepare + 页级决策 + 执行 + VM 置位               |
-| `lazy_scan_noprune()`            | 无 cleanup lock 时的降级扫描；aggressive 下可要求重试            |
-| `heap_prepare_freeze_tuple()`    | 单元组冻结计划（可读 multixact / 产生新 multi）                  |
-| `heap_tuple_should_freeze()`     | 是否存在 < FreezeLimit 的 XID ⇒ 页必须冻结；维护 NoFreeze 追踪器 |
-| `FreezeMultiXactId()`            | multi xmax 的四种处置                                            |
-| `heap_freeze_execute_prepared()` | 临界区内原子执行全页计划 + 写 `XLOG_HEAP2_FREEZE_PAGE`           |
-| `heap_execute_freeze_tuple()`    | 按计划改写单个 tuple 头                                          |
-| `heap_freeze_tuple()`            | prepare+execute 一步到位、不写 WAL（CLUSTER / rewriteheap 用）   |
-| `heap_xlog_freeze_page()`        | redo                                                             |
-| `SetTransactionIdLimit()`        | wraparound 防线阈值（varsup.c）                                  |
+**failsafe**（PG 12+）：表 `relfrozenxid` 老于 `max(vacuum_failsafe_age, 1.05 × autovacuum_freeze_max_age)`（默认 16 亿）时，正在进行的 aggressive VACUUM 放弃索引清理与表截断，仅以尽快推进 `relfrozenxid` 为目标。
 
 ---
 
-## 11. 流程概览
+## 9. 核心函数速查
+
+| 函数 | 职责 |
+| --- | --- |
+| `vacuum_get_cutoffs()` | 计算各 cutoff、判定 aggressive（`vacuum.c`） |
+| `heap_tuple_should_freeze()` | 检测页内是否存在 < `FreezeLimit` 的 XID（即是否必须冻结）；维护 NoFreeze 追踪器 |
+| `heap_prepare_freeze_tuple()` | 构造单元组冻结计划（可读取 multixact / 产生新 multi） |
+| `FreezeMultiXactId()` | multi xmax 的四种处置 |
+| `lazy_scan_prune()` | prune + 逐元组 prepare + 页级决策 + 执行 + VM 置位 |
+| `lazy_scan_noprune()` | 无 cleanup lock 时的降级扫描；aggressive 下可要求重试 |
+| `heap_freeze_execute_prepared()` | 临界区内原子执行全页计划并写 `XLOG_HEAP2_FREEZE_PAGE` |
+| `heap_execute_freeze_tuple()` | 按计划改写单个 tuple 头 |
+| `heap_freeze_tuple()` | prepare + execute 一步完成、不写 WAL（CLUSTER / rewriteheap 使用） |
+| `heap_xlog_freeze_page()` | redo |
+| `SetTransactionIdLimit()` | 防御阈值计算（`varsup.c`） |
+
+---
+
+## 10. 流程概览
 
 ```text
 ExecVacuum | vacuum
@@ -208,27 +216,28 @@ ExecVacuum | vacuum
             lazy_scan_skip            /* aggressive 只能跳 all-frozen 页 */
             lazy_scan_prune           /* Prune, freeze, and count tuples */
                 heap_page_prune       /* 先回收 HOT 死版本 */
-                HeapTupleSatisfiesVacuum
-                heap_prepare_freeze_tuple   /* 每个 LP_NORMAL 元组 */
-                    heap_tuple_should_freeze      /* freeze_required? */
-                    FreezeMultiXactId             /* xmax 是 multi */
+                HeapTupleSatisfiesVacuum          /* DEAD 元组已被 prune，不会进入冻结 */
+                heap_prepare_freeze_tuple         /* 每个 LP_NORMAL：在内存中构造计划 */
+                    heap_tuple_should_freeze      /* 页内存在 < FreezeLimit 的 XID? */
+                    FreezeMultiXactId             /* xmax 为 multi 时 */
                 [decide: freeze_required || tuples_frozen==0 || FPI]
-                heap_freeze_execute_prepared
+                heap_freeze_execute_prepared      /* 临界区内原子执行 */
                     heap_execute_freeze_tuple     /* 改写 tuple 头 */
                     XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_FREEZE_PAGE)
-                visibilitymap_set            /* ALL_VISIBLE | ALL_FROZEN */
+                visibilitymap_set                 /* ALL_VISIBLE | ALL_FROZEN */
             vac_update_relstats       /* 推进 pg_class.relfrozenxid / relminmxid */
-    vac_truncate_clog                  /* 按全库最老 datfrozenxid 截断 clog */
+    vac_truncate_clog                /* 按全库最老 datfrozenxid 截断 clog */
 ```
 
 ---
 
-## 12. 可复现实验（PG 16.11 实测）
+## 11. 可复现实验（PG 16.11 实测）
 
-### 12.1 观察 infomask 与 relfrozenxid
+### 11.1 基础：观察 infomask 变化、relfrozenxid 推进与 VM 标记
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pageinspect;
+CREATE EXTENSION IF NOT EXISTS pg_visibility;
 
 DROP TABLE IF EXISTS test_freeze;
 CREATE TABLE test_freeze (id int PRIMARY KEY, val int)
@@ -236,7 +245,7 @@ CREATE TABLE test_freeze (id int PRIMARY KEY, val int)
 
 INSERT INTO test_freeze VALUES (1, 1), (2, 2), (3, 3);
 
--- 新插入: t_infomask = 2048 (HEAP_XMAX_INVALID), 无 xmin-committed hint
+-- 冻结前：t_infomask = 2048 (HEAP_XMAX_INVALID)，尚无 xmin hint
 SELECT lp, t_xmin, t_xmax, t_infomask, to_hex(t_infomask)
 FROM heap_page_items(get_raw_page('test_freeze', 0));
 
@@ -244,17 +253,17 @@ SELECT relfrozenxid, age(relfrozenxid) FROM pg_class WHERE relname = 'test_freez
 
 VACUUM FREEZE test_freeze;
 
--- t_xmin 不变; t_infomask = 2816 = 2048 | 0x0300 (HEAP_XMIN_FROZEN)
+-- 冻结后：t_xmin 不变；t_infomask = 2816 = 2048 | 0x0300 (HEAP_XMIN_FROZEN)
 SELECT lp, t_xmin, t_xmax, t_infomask, to_hex(t_infomask)
 FROM heap_page_items(get_raw_page('test_freeze', 0));
 
 SELECT relfrozenxid, age(relfrozenxid) FROM pg_class WHERE relname = 'test_freeze';
 
--- VM: 页已 all-visible + all-frozen（需 pg_visibility 扩展）
+-- VM：页面已标记 all-visible + all-frozen
 SELECT blkno, all_visible, all_frozen FROM pg_visibility_map('test_freeze');
 ```
 
-### 12.2 lock-only xmax 被 freeze 清除
+### 11.2 lock-only xmax 被冻结清除
 
 ```sql
 BEGIN; SELECT * FROM test_freeze WHERE id = 1 FOR SHARE; COMMIT;
@@ -265,30 +274,30 @@ FROM heap_page_items(get_raw_page('test_freeze', 0));
 
 VACUUM FREEZE test_freeze;
 
--- lp1: t_xmax = 0 —— freeze_xmax 路径清掉 lock-only xmax
+-- lp1: t_xmax = 0 —— freeze_xmax 路径清除了 lock-only xmax
 SELECT lp, t_xmin, t_xmax, t_infomask
 FROM heap_page_items(get_raw_page('test_freeze', 0));
 ```
 
-（要观察到真正的 multi xmax，需要两个并发会话先后 `FOR SHARE` / `FOR UPDATE` 再提交。）
+（若要观察真正的 multi xmax，需两个并发会话先后执行 `FOR SHARE` / `FOR UPDATE` 后提交。）
 
-### 12.3 aggressive 与 VACUUM VERBOSE 输出
+### 11.3 aggressive 模式与 VACUUM VERBOSE 输出
 
 ```sql
 SET vacuum_freeze_table_age = 0;
 VACUUM VERBOSE test_freeze;
 -- INFO:  aggressively vacuuming ...
 -- new relfrozenxid: 14661, which is N XIDs ahead of previous value
--- frozen: 0 pages ... had 0 tuples frozen   <- 冻过之后再次 FREEZE 大多无事可做
+-- frozen: 0 pages ... had 0 tuples frozen   <- 已冻结的表再次 FREEZE，通常无元组可冻
 ```
 
-### 12.4 pg_waldump 观察 FREEZE_PAGE 记录
+### 11.4 pg_waldump：观察 FREEZE_PAGE 记录
 
 ```sql
-SELECT pg_current_wal_lsn();          -- 记下起点
-UPDATE test_freeze SET val = val + 1 WHERE id = 2;  -- 产生新版本
+SELECT pg_current_wal_lsn();          -- 记录起点
+UPDATE test_freeze SET val = val + 1 WHERE id = 2;  -- 产生新版本（HOT）
 VACUUM FREEZE test_freeze;
-SELECT pg_current_wal_lsn();          -- 记下终点
+SELECT pg_current_wal_lsn();          -- 记录终点
 ```
 
 ```text
@@ -298,27 +307,11 @@ rmgr: Heap2  ... desc: FREEZE_PAGE snapshotConflictHorizon: 14661, nplans: 1,
                  plans: [{ xmax: 0, infomask: 11008, infomask2: 32770, ntuples: 1, offsets: [4] }], ...
 ```
 
-HOT 新版本（offset 4）被一条去重后的 plan 冻结：`infomask 11008 = 0x2B00`（`HEAP_XMIN_FROZEN | HEAP_XMAX_INVALID | HEAP_UPDATED`）。
-
-### 12.5 Call Stack
-
-```c
-ExecVacuum | vacuum
-    vacuum_rel | table_relation_vacuum
-        heap_vacuum_rel | lazy_scan_heap | lazy_scan_prune
-            heap_prepare_freeze_tuple /* prepare per-tuple freeze plan */
-                heap_tuple_should_freeze /* should VACUUM freeze page? */
-                FreezeMultiXactId /* what to do with multi xmax */
-            heap_freeze_execute_prepared /* execute all plans atomically */
-	            heap_execute_freeze_tuple /* set xmax/infomask/infomask2, xvac */
-	            XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_FREEZE_PAGE)
-            visibilitymap_set(rel, blkno, ..., VISIBILITYMAP_ALL_FROZEN)
-	    vac_update_relstats /* advance pg_class.relfrozenxid */
-```
+HOT 新版本（offset 4）由一条**去重后的 plan** 冻结：`infomask 11008 = 0x2B00`（`HEAP_XMIN_FROZEN | HEAP_XMAX_INVALID | HEAP_UPDATED`）。
 
 ---
 
-## 13. 相关笔记
+## 12. 相关笔记
 
 [XID](../src/backend/access/transam/05_xid.md) · [CLOG](../src/backend/access/transam/09_clog.md) · [MVCC Visibility](../src/backend/access/transam/08_mvcc_visibility.md) · [Page Prune](../src/backend/access/heap/03_prune.md) · [Lazy VACUUM](../src/backend/access/heap/04_vacuumlazy.md) · [VM](../src/backend/access/heap/01_vm.md) · [Heap AM](../src/backend/access/heap/heap.md) · [trace: VM](../src/traces/05_vm.md)
 

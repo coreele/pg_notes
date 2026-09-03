@@ -1,10 +1,17 @@
 # TODO
 
-## DOING
+**DOING**:
 
-- Freeze(XID wraparound + VM all-frozen)
-- Autovacuum
-- pgvector
+| number | topic      | where                                                               |
+| ------ | ---------- | ------------------------------------------------------------------- |
+| -      | VM         | [01_vm](../pgnote/src/backend/access/heap/01_vm.md)                 |
+| -      | HOT        | [02_hot](../pgnote/src/backend/access/heap/02_hot.md)               |
+| -      | Prune      | [03_prune](../pgnote/src/backend/access/heap/03_prune.md)           |
+| -      | VACUUM     | [04_vacuumlazy](../pgnote/src/backend/access/heap/04_vacuumlazy.md) |
+| -      | vacuum     | [vacuumlazy](doing/vacuumlazy.md)                                   |
+| -      | Autovacuum |                                                                     |
+| -      | FSM        | [01_fsm](../pgnote/src/backend/storage/freespace/01_fsm.md)         |
+| -      | pgvector   |                                                                     |
 
 ## meta
 
@@ -146,8 +153,8 @@
 | 8      | Table AM / Index AM API             |       |       |        |                                                           |
 | 9      | GIN / GiST / BRIN                   |       |       |        |                                                           |
 | 10     | pgvector: vector Type & Typmod      |       |       |        | [01_type_typmod](temp/pgvector/01_type_typmod.md)         |
-| 11     | pgvector: Distance Functions & SIMD |       |       |        | [02_distance_simd](temp/pgvector/02_distance_simd.md)   |
-| 12     | pgvector: IVFFlat Index             |       |       |        | [03_ivfflat](temp/pgvector/03_ivfflat.md)               |
+| 11     | pgvector: Distance Functions & SIMD |       |       |        | [02_distance_simd](temp/pgvector/02_distance_simd.md)     |
+| 12     | pgvector: IVFFlat Index             |       |       |        | [03_ivfflat](temp/pgvector/03_ivfflat.md)                 |
 | 13     | pgvector: HNSW Index                |       |       |        | [04_hnsw](temp/pgvector/04_hnsw.md)                       |
 
 ## memory
