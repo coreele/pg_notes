@@ -4,13 +4,9 @@
 
 - [The Internals of PostgreSQL: 6 VACUUM Processing](https://www.interdb.jp/pg/pgsql06/index.html)
 
-本文只覆盖 lazy vacuum（死元组回收与索引清理）。Freeze / wraparound、autovacuum、`VACUUM FULL` / `CLUSTER` 见该章其余小节。
-
-## 1. 定义
+## 1. Overview
 
 **Lazy vacuum**：在 `ShareUpdateExclusiveLock` 下按页清理堆与索引，不重写整表、不更换 `relfilenode`。普通 `VACUUM` 与 autovacuum worker 均走此路径。
-
-源码：`commands/vacuum.c` → `heap_vacuum_rel`（`vacuumlazy.c`）。对照：[Page Prune](./03_prune.md)、[HOT](./02_hot.md)、[VM](./01_vm.md)、[FSM](../../storage/freespace/01_fsm.md)。
 
 | 路径          | 锁                         | 作用                                                                            | 文件                          |
 | ------------- | -------------------------- | ------------------------------------------------------------------------------- | ----------------------------- |
@@ -19,7 +15,7 @@
 | `VACUUM FULL` | `AccessExclusiveLock`      | 按堆扫描顺序 `rewriteheap`，新 `relfilenode`，重建索引                          | `cluster.c` / `rewriteheap.c` |
 | `CLUSTER tb`  | `AccessExclusiveLock`      | 按索引顺序 `rewriteheap`，新 `relfilenode`，重建索引                            | `cluster.c` / `rewriteheap.c` |
 
-PG 9.0 起 `VACUUM FULL` 不再在原文件内搬元组，而是调用 `cluster_rel()`，与 `CLUSTER` 共用 `rewriteheap`：将仍需保留的元组写入新堆文件、重建全部索引、切换 `relfilenode` 后删除旧文件。二者都能消除中部空洞并缩小关系文件。
+PG 9.0 起 `VACUUM FULL` 不再在原文件内搬元组，而是调用 `cluster_rel()`，与 `CLUSTER` 共用 `rewriteheap`：将仍需保留的元组写入新堆文件、重建全部索引、切换 `relfilenode` 后删除旧文件。
 
 `VACUUM FULL` 和 `CLUSTER` 区别:
 
@@ -32,7 +28,7 @@ PG 9.0 起 `VACUUM FULL` 不再在原文件内搬元组，而是调用 `cluster_
 
 ---
 
-## 2. 为何需要
+## 2. Line Pointer
 
 LP 的四种状态
 
@@ -64,7 +60,7 @@ WHY: 为什么必须按照 `heap -> index -> heap` 的顺序处理，而不是�
 
 ---
 
-## 3. 可回收条件：OldestXmin
+## 3. `OldestXmin`
 
 VACUUM 不以当前会话快照为准，而要求元组对**所有仍可能引用它的快照**均不可见。
 
@@ -89,7 +85,7 @@ typedef enum
 
 ---
 
-## 4. 回收过程
+## 4. Call Stack
 
 ```c
 ExecVacuum | vacuum /* vacuum relations or all releated tables */
@@ -103,14 +99,13 @@ ExecVacuum | vacuum /* vacuum relations or all releated tables */
                         heap_prune_chain /* process all line pointer */
                         heap_page_prune_execute
                             ItemIdSetRedirect /* Update all redirected line pointers */
-          		            ItemIdSetDead     /* Update all now-dead line pointers */
-          		            ItemIdSetUnused   /* Update all now-unused line pointers */
-          		            PageRepairFragmentation
-         			            compactify_tuples
+	        	            ItemIdSetDead     /* Update all now-dead line pointers */
+	        	            ItemIdSetUnused   /* Update all now-unused line pointers */
+	        	            PageRepairFragmentation
+	        		            compactify_tuples
                         PageClearFull
                         MarkBufferDirty
                         XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_PRUNE)
-
                     heap_prepare_freeze_tuple
                     heap_freeze_execute_prepared /* freeze heap tuples */
                         heap_execute_freeze_tuple /* Execute the prepared freezing of a tuple with caller's freeze plan */
@@ -120,22 +115,13 @@ ExecVacuum | vacuum /* vacuum relations or all releated tables */
                     lazy_vacuum_all_indexes
                         lazy_vacuum_one_index | vac_bulkdel_one_index /* vacuum index relation */
                             index_bulk_delete | IndexAmRoutine::ambulkdelete
-                                btbulkdelete
-                                    _bt_start_vacuum
-                                    btvacuumscan
-                                        btvacuumpage
-                                    _bt_end_vacuum
+                                btbulkdelete /* nbtree.c */
                     lazy_vacuum_heap_rel /* LP_DEAD -> LP_UNUSED */
                         lazy_vacuum_heap_page
                             ItemIdSetUnused
                             PageTruncateLinePointerArray
                             MarkBufferDirty
                             XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_VACUUM);
-                FreeSpaceMapVacuumRange
-                    lazy_cleanup_one_index
-                        vac_cleanup_one_index
-                            index_vacuum_cleanup | IndexAmRoutine::amvacuumcleanup
-                                btvacuumcleanup
             lazy_truncate_heap
             vac_update_relstats /* update stats */
     vac_update_datfrozenxid
@@ -200,13 +186,13 @@ heap_page_prune（same lazy_scan_heap pass）
 
 ---
 
-## 6. 锁、并发与代价
+## 6. Lock
 
-| 对象  | 锁                          | 作用                                   |
-| --- | -------------------------- | ------------------------------------ |
-| 表   | `ShareUpdateExclusiveLock` | 排斥第二个 VACUUM / 部分 DDL；允许 DML         |
-| 堆页  | cleanup lock               | prune、修改 lp、置 `PD_ALL_VISIBLE` 时独占该页 |
-| 索引页 | 各 AM 的 vacuum 锁            | 删除死索引项                               |
+| 对象   | 锁                         | 作用                                           |
+| ------ | -------------------------- | ---------------------------------------------- |
+| 表     | `ShareUpdateExclusiveLock` | 排斥第二个 VACUUM / 部分 DDL；允许 DML         |
+| 堆页   | cleanup lock               | prune、修改 lp、置 `PD_ALL_VISIBLE` 时独占该页 |
+| 索引页 | 各 AM 的 vacuum 锁         | 删除死索引项                                   |
 
 - DML 与 vacuum 并发时，本轮只回收扫描时已满足条件的死元组；此后产生的死元组留待下一轮
 - 置 VM 须持有堆页锁并复核，避免刚标记 all-visible 即被 INSERT 修改
@@ -216,7 +202,7 @@ heap_page_prune（same lazy_scan_heap pass）
 
 ---
 
-## 7. 观测
+## 7. Case
 
 关闭表级 autovacuum，避免 worker 在观测前完成 prune / vacuum。
 
@@ -254,15 +240,13 @@ SELECT itemoffset, ctid FROM bt_page_items('tb_pkey', 1);
 
 ---
 
-## 9. 小结
+## 9. Summary
 
 1. Lazy vacuum 与 DML 并发。扫堆阶段完成 prune、置 VM、更新 FSM，并收集死 TID；随后两遍清理：先索引（`ambulkdelete`）→ 再回访堆页把 `LP_DEAD` 改 `LP_UNUSED`。死 TID 过多时按 `maintenance_work_mem` 分批多轮。
 2. prune 不掌握索引信息：非 `HEAP_ONLY` 的死元组最多标到 `LP_DEAD`，槽复用必须等索引清理；HOT 中间版本无索引项，prune 可直接页内回收。root 仍被索引引用，整链死时同样等索引清理。
 3. 不更换文件、不消除中部空洞；截断仅发生在表尾连续空页。整表缩小走 `rewriteheap`：`VACUUM FULL`（堆序）或 `CLUSTER`（索引序）。
-4. 无法回收通常是 OldestXmin 被长事务或复制槽推迟，而非 VACUUM 未执行。
+4. 无法回收通常是 `OldestXmin` 被长事务或复制槽推迟，而非 VACUUM 未执行。
 
 ---
 
 **相关笔记**: [Heap AM](./heap.md) · [Page Prune](./03_prune.md) · [HOT](./02_hot.md) · [VM](./01_vm.md) · [FSM](../../storage/freespace/01_fsm.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [Lock Overview](../../storage/lmgr/01_overview.md) · [trace: delete](../../../traces/02_delete.md) · [trace: update](../../../traces/03_update.md)
-
-**最后更新**: 2026-08-18 | **适用版本**: PostgreSQL 15.x / 16.x / devel
